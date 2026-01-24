@@ -14,80 +14,26 @@
   }
 </script>
 
-<div class="page-content">
+<div class="flex min-h-[60vh] w-full max-w-4xl flex-col items-center justify-center">
   {#if !generatedDiary}
-    <div class="recorder-section" out:fade>
-      <div class="hero-text">
-        <h2>あなたの今日を、<br/>絵日記にしませんか？</h2>
-        <p>AIとお話しするだけで、素敵な思い出として記録します。</p>
+    <div class="flex w-full flex-col items-center" out:fade>
+      <div class="mb-12 text-center">
+        <h2 class="mb-4 bg-linear-to-br from-gray-700 to-gray-500 bg-clip-text text-4xl font-extrabold leading-tight text-transparent sm:text-5xl">
+          あなたの今日を、<br/>絵日記にしませんか？
+        </h2>
+        <p class="text-lg text-gray-500">AIとお話しするだけで、素敵な思い出として記録します。</p>
       </div>
       <MultimodalRecorder on:complete={handleComplete} />
     </div>
   {:else}
-    <div class="result-section" in:fly={{ y: 50, duration: 800, delay: 200 }}>
+    <div class="flex flex-col items-center gap-8" in:fly={{ y: 50, duration: 800, delay: 200 }}>
       <DiaryCard imageSrc={generatedDiary.imageSrc} text={generatedDiary.text} />
-      <button class="reset-btn" on:click={reset}>もう一度記録する</button>
+      <button 
+        class="text-blue-500 font-semibold underline decoration-blue-500/30 underline-offset-4 opacity-80 transition-all hover:opacity-100 hover:decoration-blue-500" 
+        on:click={reset}
+      >
+        もう一度記録する
+      </button>
     </div>
   {/if}
 </div>
-
-<style>
-  .page-content {
-    width: 100%;
-    max-width: 800px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 60vh;
-  }
-
-  .hero-text {
-    text-align: center;
-    margin-bottom: 3rem;
-  }
-
-  h2 {
-    font-size: 2.5rem;
-    font-weight: 800;
-    line-height: 1.2;
-    margin-bottom: 1rem;
-    background: linear-gradient(135deg, #333, #666);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  p {
-    font-size: 1.1rem;
-    color: #666;
-  }
-
-  .recorder-section {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .result-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2rem;
-  }
-
-  .reset-btn {
-    background: none;
-    border: none;
-    color: #4285f4;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: underline;
-    opacity: 0.8;
-    transition: opacity 0.2s;
-  }
-
-  .reset-btn:hover {
-    opacity: 1;
-  }
-</style>
