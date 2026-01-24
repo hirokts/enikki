@@ -51,75 +51,26 @@
   }
 </script>
 
-<div class="recorder-container">
-  <div class="visualizer-wrapper">
+<div class="mx-auto flex w-full max-w-2xl flex-col items-center gap-8">
+  <div class="flex w-full justify-center">
     <AudioVisualizer mode={status === 'listening' ? 'listening' : status === 'speaking' ? 'speaking' : status === 'thinking' ? 'thinking' : 'idle'} />
   </div>
 
-  <div class="controls">
+  <div class="flex gap-4">
     {#if status === 'idle'}
-      <button class="btn-primary" on:click={startConversation}>
+      <button 
+        class="bg-linear-to-br from-blue-500 to-green-500 px-8 py-4 text-lg font-bold text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/40 rounded-full"
+        on:click={startConversation}
+      >
         話しかける
       </button>
     {:else}
-      <button class="btn-secondary" on:click={endConversation}>
+      <button 
+        class="border border-gray-300 bg-gray-100 px-8 py-4 text-lg font-bold text-gray-800 transition-all duration-200 hover:bg-gray-200 rounded-full"
+        on:click={endConversation}
+      >
         日記にする
       </button>
     {/if}
   </div>
 </div>
-
-<style>
-  .recorder-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2rem;
-    width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
-  .visualizer-wrapper {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-  }
-
-  .controls {
-    display: flex;
-    gap: 1rem;
-  }
-
-  button {
-    padding: 1rem 2rem;
-    border-radius: 9999px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    border: none;
-    outline: none;
-  }
-
-  .btn-primary {
-    background: linear-gradient(135deg, #4285f4, #34a853);
-    color: white;
-    box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
-  }
-
-  .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
-  }
-
-  .btn-secondary {
-    background: #f1f3f4;
-    color: #333;
-    border: 1px solid #ddd;
-  }
-
-  .btn-secondary:hover {
-    background: #e8eaed;
-  }
-</style>
