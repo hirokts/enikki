@@ -20,6 +20,7 @@
 - [x] ローカル開発環境の整備
     - 起動コマンドの確認 (`docker compose up` または `uv run uvicorn ...`)
     - README に手順を記載
+- [x] 生成済みの絵日記を返すStubエンドポイントを用意
 
 ## Notes
 - **重要**: 今回のスコープはプロジェクトのセットアップ（Hello World + Docker + Env）まで。
