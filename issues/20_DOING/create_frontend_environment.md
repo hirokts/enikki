@@ -5,8 +5,9 @@
 - フロントエンドの環境を作る
 
 ## Tasks
-- [ ] sveltekitの環境構築
-- [ ] 
+- [x] sveltekitの環境構築
+- [x] Typescript, TailwindCSSの環境を構築
+- [ ] フロントエンドのビルドがパスする
 
 ## Notes
 <!-- 補足情報、参考リンクなど -->
