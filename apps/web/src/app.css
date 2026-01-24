@@ -3,7 +3,7 @@
 @plugin '@tailwindcss/typography';
 
 @theme {
-  --font-display: 'Inter', system-ui, sans-serif;
-  --font-body: 'Inter', system-ui, sans-serif;
-  --font-handwriting: 'Zen Kurenaido', sans-serif;
+	--font-display: 'Inter', system-ui, sans-serif;
+	--font-body: 'Inter', system-ui, sans-serif;
+	--font-handwriting: 'Zen Kurenaido', sans-serif;
 }
