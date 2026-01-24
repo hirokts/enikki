@@ -7,7 +7,7 @@
 ## Tasks
 - [x] sveltekitの環境構築
 - [x] Typescript, TailwindCSSの環境を構築
-- [ ] フロントエンドのビルドがパスする
+- [x] フロントエンドのビルドがパスする
 
 ## Notes
 <!-- 補足情報、参考リンクなど -->

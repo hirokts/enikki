@@ -1,0 +1,23 @@
+[project]
+name = "api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "hirokts", email = "9495043+hirokts@users.noreply.github.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.128.0",
+    "google-cloud-aiplatform>=1.134.0",
+    "google-cloud-firestore>=2.23.0",
+    "pydantic>=2.12.5",
+    "uvicorn>=0.40.0",
+]
+
+[project.scripts]
+api = "api:main"
+
+[build-system]
+requires = ["uv_build>=0.9.26,<0.10.0"]
+build-backend = "uv_build"
