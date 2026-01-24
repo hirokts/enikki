@@ -284,7 +284,8 @@ MVPの条件
 - ホスティング: Firebase App Hosting (Google Cloudの次世代フロントエンド基盤)
 - 役割:
     - 録音ボタンで音声入力。
-    - 過去の「絵日記」をカレンダー形式やリスト形式で表示。
+    - 過去の「絵日記」をリスト形式で表示。
+        - 余力があればカレンダー形式で表示。  
     - 公開用URLを発行して、家族やチームにシェア。
 
 ## 2. バックエンド（AI処理）
@@ -391,7 +392,8 @@ Would you like me to **provide a minimal React example for the Multimodal Live A
 
 
 
-記録
+## 記録
+#### 2026-01-19
 - enikki-cloudのプロジェクトを作成
 - api有効化
     - vertex ai api
@@ -407,3 +409,12 @@ Would you like me to **provide a minimal React example for the Multimodal Live A
     - Google Cloud プロジェクトから作成
     - google analyticsなし
     - Firebase Consoleへの招待は必要なさそうだった
+
+
+#### 2026-01-24
+- フロントエンドのベース作成 (pnpm devで起動してWeb UI動作確認)
+- バックエンドのベース作成 (docker composeで起動してAPIホスト動作確認)
+- 今後の方針
+    - ローカル環境で一連の流れを動作させるところを目指す
+        - フロントエンド：音声チャットの動作
+        - バックエンド：Gemini 用のトークン発行エンドポイントの動作とLangGraph実行のエンドポイント
