@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import google.auth
@@ -22,6 +22,17 @@ app.add_middleware(
 )
 
 
+# API Key 検証
+def verify_api_key(x_api_key: str = Header(..., alias="X-API-Key")):
+    """X-API-Key ヘッダーを検証する"""
+    expected_key = os.getenv("API_KEY")
+    if not expected_key:
+        raise HTTPException(status_code=500, detail="API_KEY not configured")
+    if x_api_key != expected_key:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+    return x_api_key
+
+
 class TokenResponse(BaseModel):
     accessToken: str
     expiresIn: int
@@ -40,11 +51,20 @@ def health_check():
 
 
 @app.post("/auth/token", response_model=TokenResponse)
-def get_auth_token():
+def get_auth_token(api_key: str = Header(..., alias="X-API-Key")):
     """
     Vertex AI (Multimodal Live API) 接続用のアクセストークンを発行する。
     フロントエンドはこのトークンを使って Gemini に直接接続する。
+    
+    認証: X-API-Key ヘッダーが必要
     """
+    # API Key 検証
+    expected_key = os.getenv("API_KEY")
+    if not expected_key:
+        raise HTTPException(status_code=500, detail="API_KEY not configured")
+    if api_key != expected_key:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+    
     # デフォルト認証情報を取得
     credentials, project = google.auth.default(
         scopes=["https://www.googleapis.com/auth/cloud-platform"]

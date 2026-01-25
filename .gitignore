@@ -1,4 +1,7 @@
 # Enikki
 .env
 
+# GCP Credentials (NEVER commit these!)
+credentials/
+
 docs/trash/*
