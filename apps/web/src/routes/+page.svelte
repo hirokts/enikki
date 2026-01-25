@@ -2,7 +2,12 @@
 	import MultimodalRecorder from '$lib/components/MultimodalRecorder.svelte';
 	import DiaryCard from '$lib/components/DiaryCard.svelte';
 	import { fade, fly } from 'svelte/transition';
+	import { onMount } from 'svelte';
+	import { checkApiKeyStatus } from '$lib/api';
 
+	onMount(() => {
+		checkApiKeyStatus();
+	});
 	let generatedDiary: { imageSrc: string; text: string } | null = $state(null);
 
 	function handleComplete(data: { imageSrc: string; text: string }) {
