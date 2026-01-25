@@ -38,6 +38,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "google-auth" },
     { name = "google-cloud-aiplatform" },
     { name = "google-cloud-firestore" },
     { name = "pydantic" },
@@ -47,6 +48,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.128.0" },
+    { name = "google-auth", specifier = ">=2.47.0" },
     { name = "google-cloud-aiplatform", specifier = ">=1.134.0" },
     { name = "google-cloud-firestore", specifier = ">=2.23.0" },
     { name = "pydantic", specifier = ">=2.12.5" },
