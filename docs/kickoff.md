@@ -418,3 +418,7 @@ Would you like me to **provide a minimal React example for the Multimodal Live A
     - ローカル環境で一連の流れを動作させるところを目指す
         - フロントエンド：音声チャットの動作
         - バックエンド：Gemini 用のトークン発行エンドポイントの動作とLangGraph実行のエンドポイント
+
+
+#### 2026-01-25
+- Vertex AI API(Multimodal Live API)をフロントで使うためのトークンエンドポイントをバックエンドに実装
