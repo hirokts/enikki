@@ -430,3 +430,6 @@ Would you like me to **provide a minimal React example for the Multimodal Live A
         - ネイティブ モード (Native Mode) を選択
         - ロケーションは asia-northeast1 (Tokyo) を選択
         - データベースIDは (default) 
+- 画像保存用バケットを作成
+    - バケットを公開アクセス可能にした（画像を直接URLでアクセス可能にするため）
+- 日記本文の生成と画像生成のワークフローを実装
