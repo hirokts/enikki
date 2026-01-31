@@ -49,6 +49,7 @@ export class LiveClient extends EventTarget {
 		};
 	}
 
+
 	private sendSetupMessage() {
 		const { projectId, region } = this.config;
 
@@ -56,7 +57,29 @@ export class LiveClient extends EventTarget {
 			setup: {
 				model: `projects/${projectId}/locations/${region}/publishers/google/models/gemini-live-2.5-flash-preview-native-audio-09-2025`,
 				generation_config: {
-					response_modalities: ['AUDIO']
+					response_modalities: ['AUDIO'],
+					speech_config: {
+						voice_config: {
+							prebuilt_voice_config: {
+								voice_name: 'Aoede' // 優しい女性の声 (Puck, Charon, Kore, Fenrir, Aoede などから選択可能)
+							}
+						}
+					}
+				},
+				system_instruction: {
+					parts: [
+						{
+							text: `あなたはユーザーの「今日一日の出来事」を聞き出す、優しくて親しみやすいインタビュアーです。
+ユーザーは子供かもしれないので、分かりやすく、短く、優しく話しかけてください。
+目的は、後でこの会話を元に「絵日記」を作ることです。そのために必要な情報（いつ、どこで、誰と、何をした、どう思った）を、自然な会話の中で引き出してください。
+
+ルール:
+1. 一度にたくさんの質問をせず、ひとつずつ聞いてください。
+2. ユーザーが答えたら、ポジティブに反応してください（「それは楽しそうだね！」「すごいね！」など）。
+3. 話が一段落したと思ったら、「他には何かあった？」と聞くか、「十分お話が聞けたね、ありがとう！」と会話の終了を促してください。
+4. 常に日本語で話してください。`
+						}
+					]
 				}
 			}
 		};
