@@ -97,3 +97,55 @@
 ### ローカル開発 (Docker Compose)
 *   ローカルエミュレータを使用する場合でも、**Vertex AI はクラウド上の実リソース**を使用します。
 *   Google Cloud 認証（ADC）とトークン発行が正しく機能するかがセットアップの鍵です。
+
+---
+
+## 5. 絵日記生成ワークフロー (LangGraph)
+
+会話ログから絵日記を生成する処理を、**LangGraph** を使ったグラフベースのワークフローとして実装します。
+これにより、処理の流れが明確になり、品質チェック→再生成のループ（Agentic な自己改善）も表現できます。
+
+### ワークフロー図
+
+```mermaid
+flowchart TD
+    START([🎙️ 会話ログ受信]) --> extract[📝 キーワード抽出<br/>Gemini]
+    extract --> generate[✍️ 日記文章生成<br/>Gemini]
+    generate --> check{🔍 品質チェック<br/>Gemini}
+    check -->|OK| image[🎨 画像生成<br/>Imagen 3]
+    check -->|NG & retry < 3| generate
+    check -->|NG & retry >= 3| fallback[⚠️ フォールバック処理]
+    image --> save[💾 Firestore 保存]
+    fallback --> save
+    save --> END([✅ 完了])
+```
+
+### 各ノードの役割
+
+| ノード | 処理内容 | 使用API |
+|--------|----------|---------|
+| `extract` | 会話ログから4つのキーワードを抽出 | Gemini Pro |
+| `generate` | キーワードを元に「ぼくの夏休み」風の日記テキスト生成 | Gemini Pro |
+| `check` | 生成された文章の品質評価（子供らしさ、絵日記らしさ） | Gemini Pro |
+| `image` | 日記テキストを元に絵日記風の画像を生成 | Imagen 3 |
+| `save` | 結果を Firestore に保存、ステータスを `completed` に更新 | Firestore |
+
+### 状態管理 (State)
+
+```python
+class DiaryState(TypedDict):
+    document_id: str          # Firestore ドキュメント ID
+    conversation_log: dict    # 入力: 会話ログ（report_diary_event の引数）
+    keywords: list[str]       # 抽出されたキーワード
+    diary_text: str           # 生成された日記テキスト
+    quality_score: float      # 品質スコア (0.0 - 1.0)
+    retry_count: int          # リトライ回数
+    image_url: str            # 生成された画像の URL
+    status: str               # pending / processing / completed / failed
+```
+
+### Agentic ポイント
+
+1. **自己評価ループ**: 生成結果を別の Gemini 呼び出しで評価し、基準を満たさなければ再生成
+2. **条件分岐**: 品質スコアに応じて次のアクションを決定（OK → 画像生成 / NG → リトライ）
+3. **フォールバック**: リトライ上限に達した場合も graceful に終了
