@@ -45,6 +45,33 @@ export async function getVertexAIToken(): Promise<{
 }
 
 /**
+ * 日記作成 API を呼び出す
+ */
+export async function createDiary(log: {
+	date: string;
+	activity: string;
+	feeling: string;
+	summary: string;
+	location?: string;
+	joke_hint?: string;
+}): Promise<{ id: string; status: string }> {
+	const response = await fetchWithAuth('/diaries', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(log)
+	});
+
+	if (!response.ok) {
+		const error = await response.json();
+		throw new Error(error.detail || 'Failed to create diary');
+	}
+
+	return response.json();
+}
+
+/**
  * Ephemeral Token を取得（Gemini Live API 用）
  */
 export async function getEphemeralToken(): Promise<{
