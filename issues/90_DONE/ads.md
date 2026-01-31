@@ -30,7 +30,7 @@ services:
     volumes:
       # ホストのADC情報をコンテナ内にマウント
       - ~/.config/gcloud:/tmp/gcloud-config
-    environment:
+    environment:,
       # ADCがマウントされたファイルを見に行くように指示
       - GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcloud-config/application_default_credentials.json
 ```
