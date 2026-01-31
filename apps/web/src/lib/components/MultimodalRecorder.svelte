@@ -76,7 +76,8 @@
 						location: args.location,
 						activity: args.activity,
 						feeling: args.feeling,
-						summary: args.summary
+						summary: args.summary,
+						joke_hint: args.joke_hint
 					})
 						.then((response) => {
 							console.log('Diary created:', response);

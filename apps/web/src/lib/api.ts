@@ -53,6 +53,7 @@ export async function createDiary(log: {
 	feeling: string;
 	summary: string;
 	location?: string;
+	joke_hint?: string;
 }): Promise<{ id: string; status: string }> {
 	const response = await fetchWithAuth('/diaries', {
 		method: 'POST',
