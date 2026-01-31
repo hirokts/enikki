@@ -7,25 +7,25 @@
 ## Tasks
 
 ### バックエンド実装 (API)
-- [ ] Pydanticモデルを作成（`src/models.py`）
+- [x] Pydanticモデルを作成（`src/models.py`）
     - `ConversationLogRequest`: 会話ログのリクエストボディ
-- [ ] Firestore クライアントの設定
+- [x] Firestore クライアントの設定
     - 依存関係確認 (`google-cloud-firestore`)
-- [ ] `POST /diaries` エンドポイントを作成
+- [x] `POST /diaries` エンドポイントを作成
     - 会話ログを受け取る
     - API Key認証を適用
     - **Firestoreに保存する**（ステータス: `pending`）
     - 生成された Document ID をレスポンスで返す
 
 ### フロントエンド実装 (Web)
-- [ ] API クライアントの拡張 (`src/lib/api.ts`)
+- [x] API クライアントの拡張 (`src/lib/api.ts`)
     - `createDiary(log: any)` メソッドの追加
-- [ ] `MultimodalRecorder.svelte` の修正
+- [x] `MultimodalRecorder.svelte` の修正
     - 会話終了時 (`report_diary_event` ツールコール時) に バックエンド API を呼び出す
     - 成功時に画面遷移または完了メッセージ表示
 
 ### 動作確認
-- [ ] ローカル環境でのデータフロー確認
+- [x] ローカル環境でのデータフロー確認
     - マイクで会話 -> 会話終了 -> Firestore にデータが作成されること
 
 ## Notes
