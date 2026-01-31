@@ -1,9 +1,14 @@
+import datetime
 import os
-from fastapi import FastAPI, Header, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+
 import google.auth
 import google.auth.transport.requests
+from fastapi import FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from google.cloud import firestore
+from pydantic import BaseModel
+
+from src.models import ConversationLogRequest, DiaryResponse
 
 app = FastAPI()
 
@@ -42,6 +47,17 @@ class TokenResponse(BaseModel):
 
 
 
+
+
+
+# Firestore クライアント初期化
+# ローカル開発などでプロジェクトIDが自動取得できない場合や、環境変数で指定したい場合に対応
+project_id = os.getenv("GCP_PROJECT_ID", "enikki-cloud")
+try:
+    db = firestore.Client(project=project_id)
+except Exception as e:
+    print(f"Warning: Failed to initialize Firestore client: {e}")
+    db = None
 
 @app.get("/")
 def read_root():
@@ -88,6 +104,39 @@ def get_auth_token(api_key: str = Header(..., alias="X-API-Key")):
         region=region
     )
 
+
+@app.post("/diaries", response_model=DiaryResponse)
+def create_diary(request: ConversationLogRequest, api_key: str = Header(..., alias="X-API-Key")):
+    """
+    会話ログ（要約データ）を受け取り、Firestoreに保存する。
+    絵日記生成処理のトリガーとなる。
+    """
+    # API Key 検証
+    verify_api_key(api_key)
+    
+    if not db:
+        raise HTTPException(status_code=500, detail="Firestore database not connected")
+
+    try:
+        # 保存するデータの構築
+        doc_data = request.model_dump()
+        doc_data.update({
+            "userId": "test-user",  # プレースホルダー
+            "status": "pending",    # 生成処理待ち
+            "createdAt": datetime.datetime.now(datetime.timezone.utc),
+            "updatedAt": datetime.datetime.now(datetime.timezone.utc)
+        })
+        
+        # Firestore に保存 (自動生成ID)
+        update_time, doc_ref = db.collection("diaries").add(doc_data)
+        
+        return DiaryResponse(
+            id=doc_ref.id,
+            status="pending"
+        )
+    except Exception as e:
+        print(f"Error saving diary: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save diary: {str(e)}")
 
 
 @app.get("/diary/stub")
