@@ -1,33 +1,57 @@
-# 絵日記生成ロジックの実装（Gemini & Imagen）
+# 絵日記生成ワークフローの実装 (LangGraph)
 
 ## Summary
-保存された会話ログを元に、Gemini で日記テキストを生成し、Imagen 3 で画像を生成するバックエンドロジックを実装します。
+保存された会話ログを元に、LangGraph を使ったグラフベースのワークフローで絵日記を生成します。
+Gemini で日記テキストを生成・品質チェックし、Imagen 3 で画像を生成、Firestore に保存します。
+
+**設計詳細**: [docs/design.md - Section 5](../docs/design.md#5-絵日記生成ワークフロー-langgraph)
 
 ## Tasks
 
-### 4単語抽出
-- [ ] Gemini APIを使って会話ログから重要な4単語を抽出
-    - プロンプト設計（「この会話から絵日記に使う4つのキーワードを抽出してください」など）
-    - 抽出結果の構造化（JSON形式）
+### セットアップ
+- [ ] `langgraph` を依存関係に追加 (`uv add langgraph`)
+- [ ] `src/diary_workflow.py` を作成
 
-### 日記文章生成
-- [ ] Gemini APIで「ぼくの夏休み」風の絵日記テキストを生成
-    - 抽出した4単語を元にプロンプト構築
-    - 子供らしい文体、感情表現を含める
-    - 文字数制限（100-200文字程度）
+### ノード実装
 
-### 画像生成 & 保存
-- [ ] 画像生成プロンプトの作成
-- [ ] Imagen 3 APIで絵日記用の画像を生成
-- [ ] Cloud Storage への保存処理実装
-    - 依存関係追加 (`google-cloud-storage`)
+#### extract_keywords (キーワード抽出)
+- [ ] Gemini API で会話ログから4つのキーワードを抽出
+- [ ] JSON形式でパース
 
-### トランザクション・状態管理
-- [ ] 生成ステータスの管理
-    - Firestore ドキュメントの更新 (`status: 'completed'`, `imageUrl`, `diaryText` 等)
-- [ ] エラーハンドリング
-    - 生成失敗時のステータス更新 (`status: 'failed'`)
+#### generate_diary (日記生成)
+- [ ] Gemini API で「ぼくの夏休み」風の絵日記テキストを生成
+- [ ] 文字数制限（100-200文字程度）
+
+#### check_quality (品質チェック)
+- [ ] Gemini API で生成文章を評価
+- [ ] 品質スコア (0.0 - 1.0) を返す
+- [ ] NG時のリトライロジック（最大3回）
+
+#### generate_image (画像生成)
+- [ ] Imagen 3 API で絵日記用の画像を生成
+- [ ] Cloud Storage に保存
+- [ ] 依存関係追加 (`google-cloud-storage`)
+
+#### save_result (結果保存)
+- [ ] Firestore ドキュメントを更新
+    - `status`: `completed`
+    - `diaryText`: 生成されたテキスト
+    - `imageUrl`: 画像URL
+    - `keywords`: 抽出されたキーワード
+
+### グラフ構築
+- [ ] `StateGraph` で各ノードを接続
+- [ ] 条件分岐エッジの実装（品質チェック → リトライ or 画像生成）
+- [ ] フォールバック処理の実装
+
+### API 連携
+- [ ] `POST /diaries` から LangGraph ワークフローを呼び出す
+- [ ] 非同期実行 or バックグラウンドタスク化
+
+### 動作確認
+- [ ] ローカル環境でのE2Eテスト
+- [ ] 品質チェック → リトライのフロー確認
 
 ## Notes
 - `implement_diary_ingestion` の後続タスク
-- Cloud Functions (Eventarc) ではなく、まずはシンプルに Fast API 内で処理（同期またはバックグラウンドタスク）する想定
+- Agentic ポイント: 自己評価ループ、条件分岐、フォールバック
