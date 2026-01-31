@@ -60,7 +60,7 @@ export class LiveClient extends EventTarget {
 					speech_config: {
 						voice_config: {
 							prebuilt_voice_config: {
-								voice_name: 'Aoede' // 優しい女性の声 (Puck, Charon, Kore, Fenrir, Aoede などから選択可能)
+								voice_name: 'Aoede'
 							}
 						}
 					}
@@ -75,11 +75,32 @@ export class LiveClient extends EventTarget {
 ルール:
 1. 一度にたくさんの質問をせず、ひとつずつ聞いてください。
 2. ユーザーが答えたら、ポジティブに反応してください（「それは楽しそうだね！」「すごいね！」など）。
-3. 話が一段落したと思ったら、「他には何かあった？」と聞くか、「十分お話が聞けたね、ありがとう！」と会話の終了を促してください。
+3. 話が一段落したと思ったら、「他には何かあった？」と聞くか、十分情報が集まったら「report_diary_event」ツールを呼び出して終了してください。
 4. 常に日本語で話してください。`
 						}
 					]
-				}
+				},
+				tools: [
+					{
+						function_declarations: [
+							{
+								name: 'report_diary_event',
+								description: '絵日記に必要な情報が集まったら呼び出す。会話を終了する。',
+								parameters: {
+									type: 'OBJECT',
+									properties: {
+										date: { type: 'STRING', description: '出来事の日付 (例: 2024-01-01)' },
+										location: { type: 'STRING', description: '場所' },
+										activity: { type: 'STRING', description: '何をしたか' },
+										feeling: { type: 'STRING', description: '感想' },
+										summary: { type: 'STRING', description: '会話の要約（絵日記の本文用）' }
+									},
+									required: ['activity', 'feeling', 'summary']
+								}
+							}
+						]
+					}
+				]
 			}
 		};
 
@@ -121,6 +142,15 @@ export class LiveClient extends EventTarget {
 		}
 
 		// Handle server content
+		if (data.toolCall) {
+			console.log('Tool Call received:', data.toolCall);
+			this.dispatchEvent(
+				new CustomEvent('toolCall', {
+					detail: data.toolCall
+				})
+			);
+		}
+
 		if (data.serverContent) {
 			if (data.serverContent.modelTurn?.parts) {
 				for (const part of data.serverContent.modelTurn.parts) {
