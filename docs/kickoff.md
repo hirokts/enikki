@@ -422,3 +422,6 @@ Would you like me to **provide a minimal React example for the Multimodal Live A
 
 #### 2026-01-25
 - Vertex AI API(Multimodal Live API)をフロントで使うためのトークンエンドポイントをバックエンドに実装
+
+#### 2026-01-31
+- フロントエンドでVertex AI Multimodal Live APIに接続し、Geminiと音声会話できるようにする
