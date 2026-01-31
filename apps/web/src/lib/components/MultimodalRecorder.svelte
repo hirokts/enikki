@@ -58,6 +58,27 @@
 				}
 			});
 
+			client.addEventListener('toolCall', ((e: CustomEvent) => {
+				const toolCall = e.detail;
+				const functionCall = toolCall.functionCalls[0];
+
+				if (functionCall.name === 'report_diary_event') {
+					console.log('Diary event reported:', functionCall.args);
+
+					stop();
+
+					// args are already an object
+					const args = functionCall.args;
+
+					// Complete the conversation with structured data
+					oncomplete({
+						imageSrc:
+							'https://images.unsplash.com/photo-1516934024742-b461fba47600?w=800&auto=format&fit=crop&q=60', // Placeholder for now
+						text: args.summary || JSON.stringify(args, null, 2)
+					});
+				}
+			}) as EventListener);
+
 			client.addEventListener('error', ((e: CustomEvent) => {
 				console.error('Live API error:', e.detail);
 				status = 'error';
