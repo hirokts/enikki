@@ -9,9 +9,23 @@
 5. Firestore 保存
 """
 
-from typing import Annotated, TypedDict
+import json
+import os
+from typing import TypedDict
 
+from langchain_google_vertexai import ChatVertexAI
 from langgraph.graph import END, START, StateGraph
+
+# Gemini モデルの初期化
+PROJECT_ID = os.getenv("GCP_PROJECT_ID", "enikki-cloud")
+REGION = os.getenv("GCP_REGION", "asia-northeast1")
+
+llm = ChatVertexAI(
+    model="gemini-2.0-flash",
+    project=PROJECT_ID,
+    location=REGION,
+    temperature=0.7,
+)
 
 
 class DiaryState(TypedDict):
@@ -33,44 +47,152 @@ class DiaryState(TypedDict):
 
 def extract_keywords(state: DiaryState) -> dict:
     """会話ログから4つのキーワードを抽出"""
-    # TODO: Gemini API を使ってキーワード抽出
-    # 仮実装: conversation_log から直接取得
     log = state["conversation_log"]
-    keywords = [
-        log.get("activity", ""),
-        log.get("feeling", ""),
-        log.get("location", "場所不明"),
-        "今日",
-    ]
-    return {"keywords": keywords, "status": "processing"}
+
+    prompt = f"""以下の会話ログから、絵日記に使う重要な4つのキーワードを抽出してください。
+キーワードは名詞や動詞など、絵に描きやすいものを選んでください。
+
+会話ログ:
+- 日付: {log.get('date', '不明')}
+- 場所: {log.get('location', '不明')}
+- 活動: {log.get('activity', '不明')}
+- 感想: {log.get('feeling', '不明')}
+- 要約: {log.get('summary', '')}
+
+JSON形式で出力してください（キーワードの配列のみ）:
+["キーワード1", "キーワード2", "キーワード3", "キーワード4"]
+"""
+
+    try:
+        response = llm.invoke(prompt)
+        content = response.content.strip()
+        # JSON部分を抽出
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0].strip()
+        elif "```" in content:
+            content = content.split("```")[1].split("```")[0].strip()
+        keywords = json.loads(content)
+        return {"keywords": keywords[:4], "status": "processing"}
+    except Exception as e:
+        print(f"Error extracting keywords: {e}")
+        # フォールバック
+        keywords = [
+            log.get("activity", ""),
+            log.get("feeling", ""),
+            log.get("location", "場所"),
+            "今日",
+        ]
+        return {"keywords": keywords, "status": "processing"}
 
 
 def generate_diary(state: DiaryState) -> dict:
     """キーワードを元に絵日記テキストを生成"""
-    # TODO: Gemini API を使って日記生成
-    # 仮実装: シンプルなテンプレート
     keywords = state.get("keywords", [])
     log = state["conversation_log"]
-    summary = log.get("summary", "今日は楽しかったです。")
-    
-    diary_text = f"今日は{log.get('location', 'どこか')}で{log.get('activity', '遊びました')}。{log.get('feeling', '楽しかった')}です。"
-    
-    return {"diary_text": diary_text}
+    joke_hint = log.get("joke_hint", "")
+
+    prompt = f"""以下の情報を元に、小学生が書くような「ぼくの夏休み」風の絵日記テキストを生成してください。
+ただし、実際の読者は大人なので、大人がクスッと笑える要素を入れてください。
+
+キーワード: {', '.join(keywords)}
+場所: {log.get('location', '')}
+活動: {log.get('activity', '')}
+感想: {log.get('feeling', '')}
+ジョークのヒント: {joke_hint if joke_hint else 'なし（自由に考えてください）'}
+
+## ルール
+- 100〜150文字程度
+- 子供らしい素直な文体（ですます調ではなく、だ・である調やカジュアルな表現）
+- 「今日は〜」で始める
+- 五感（匂い、音、感触など）の描写を1つ入れる
+- 末尾に大人向けのクスッとくるジョークを添える
+
+## 五感の例
+- 「甘い匂いがふわっとした」
+- 「パチパチ音がした」
+- 「手がベタベタになった」
+
+## 大人向けジョークの例（参考にして、状況に合ったものを作ってください）
+
+### 括弧でツッコミ（現実を添える）
+- 「早起きした（9時）」
+- 「たくさん歩いた（5000歩）」
+- 「ヘルシーなものを食べた（チートデイ）」
+- 「めちゃくちゃ寝た（昼まで）」
+
+### 大人の悩みを子供言葉で
+- 「明日も休みだったらいいのに」
+- 「有給がもっとほしい」
+- 「何もしない日って最高」
+- 「カロリーのことは考えないことにした」
+
+### 仕事への皮肉を無邪気に
+- 「今日は会議がなかった。さいこうの一日だった」
+- 「Slackの通知を見なかった。えらい」
+- 「パソコンをひらかなかった。やったー」
+
+### 大人になってわかったこと
+- 「公園は入場料がタダ。すごい」
+- 「昼寝は人生のごほうび」
+- 「おばあちゃんの料理はやっぱりちがう」
+
+## 出力
+絵日記テキストのみを出力してください（説明や注釈は不要）:
+"""
+
+    try:
+        response = llm.invoke(prompt)
+        diary_text = response.content.strip()
+        return {"diary_text": diary_text}
+    except Exception as e:
+        print(f"Error generating diary: {e}")
+        # フォールバック
+        diary_text = f"今日は{log.get('location', 'どこか')}で{log.get('activity', '遊んだ')}。{log.get('feeling', '楽しかった')}。"
+        return {"diary_text": diary_text}
 
 
 def check_quality(state: DiaryState) -> dict:
     """生成された日記の品質をチェック"""
-    # TODO: Gemini API を使って品質評価
-    # 仮実装: 常に OK
-    return {"quality_score": 0.8}
+    diary_text = state.get("diary_text", "")
+
+    prompt = f"""以下の絵日記テキストを評価してください。
+
+テキスト:
+{diary_text}
+
+評価基準:
+1. 子供らしい文体か (0.0-1.0)
+2. 感情表現があるか (0.0-1.0)
+3. 100-200文字程度か (0.0-1.0)
+4. 絵日記として自然か (0.0-1.0)
+
+JSON形式で総合スコア（0.0-1.0）のみを出力:
+{{"score": 0.8}}
+"""
+
+    try:
+        response = llm.invoke(prompt)
+        content = response.content.strip()
+        # JSON部分を抽出
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0].strip()
+        elif "```" in content:
+            content = content.split("```")[1].split("```")[0].strip()
+        result = json.loads(content)
+        score = result.get("score", 0.8)
+        return {"quality_score": score}
+    except Exception as e:
+        print(f"Error checking quality: {e}")
+        # フォールバック: 合格扱い
+        return {"quality_score": 0.8}
 
 
 def should_retry(state: DiaryState) -> str:
     """品質チェックの結果に基づいて次のノードを決定"""
     quality_score = state.get("quality_score", 0.0)
     retry_count = state.get("retry_count", 0)
-    
-    if quality_score >= 0.7:
+
+    if quality_score >= 0.6:
         return "generate_image"
     elif retry_count < 3:
         return "generate_diary"

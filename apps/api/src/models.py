@@ -14,6 +14,11 @@ class ConversationLogRequest(BaseModel):
     feeling: str = Field(..., description="感想")
     summary: str = Field(..., description="会話の要約（絵日記の本文用）")
 
+    # 大人向けジョークのヒント
+    joke_hint: Optional[str] = Field(
+        None, description="大人向けジョークのヒント（起床時間、歩数、食べた量など）"
+    )
+
     # 拡張用: 将来的に生の会話履歴などを含める場合
     raw_logs: Optional[List[Dict[str, Any]]] = Field(
         None, description="生の会話ログ（オプション）"

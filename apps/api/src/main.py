@@ -140,6 +140,7 @@ def create_diary(
             "activity": request.activity,
             "feeling": request.feeling,
             "summary": request.summary,
+            "joke_hint": request.joke_hint,
         }
 
         result = run_diary_workflow(document_id, conversation_log)
