@@ -9,7 +9,7 @@
 
 	let status: 'idle' | 'connecting' | 'connected' | 'listening' | 'speaking' | 'error' =
 		$state('idle');
-	
+
 	let client: LiveClient | null = null;
 	let recorder: AudioRecorder | null = null;
 	let player: AudioPlayer | null = null;
@@ -20,7 +20,7 @@
 			// 1. Get Access Token from backend
 			const token = await getVertexAIToken();
 			console.log('Got token for project:', token.projectId);
-			
+
 			// 2. Initialize WebSocket Client
 			client = new LiveClient({
 				projectId: token.projectId,
@@ -36,7 +36,7 @@
 			client.addEventListener('open', () => {
 				console.log('Connected to Vertex AI Live API');
 			});
-			
+
 			client.addEventListener('setupComplete', async () => {
 				status = 'connected';
 				await startListening();
@@ -46,7 +46,7 @@
 				status = 'speaking';
 				player?.play(e.detail);
 			}) as EventListener);
-			
+
 			client.addEventListener('turnComplete', () => {
 				status = 'listening';
 			});
@@ -65,7 +65,6 @@
 
 			// 5. Connect
 			client.connect();
-
 		} catch (e) {
 			console.error('Failed to start conversation', e);
 			status = 'error';
@@ -74,10 +73,10 @@
 
 	async function startListening() {
 		if (!recorder || !client) return;
-		
+
 		await recorder.start();
 		status = 'listening';
-		
+
 		recorder.addEventListener('data', ((e: CustomEvent) => {
 			client?.sendAudio(e.detail);
 		}) as EventListener);
@@ -92,7 +91,7 @@
 			text: '今日はGeminiと楽しくおしゃべりしました！'
 		});
 	}
-	
+
 	function stop() {
 		recorder?.stop();
 		client?.disconnect();
@@ -101,7 +100,7 @@
 		client = null;
 		player = null;
 	}
-	
+
 	onDestroy(() => {
 		stop();
 	});
@@ -110,14 +109,12 @@
 <div class="mx-auto flex w-full max-w-2xl flex-col items-center gap-8">
 	<div class="flex w-full justify-center">
 		<AudioVisualizer
-			mode={status === 'speaking' ? 'speaking' : (status === 'listening' ? 'listening' : 'idle')}
+			mode={status === 'speaking' ? 'speaking' : status === 'listening' ? 'listening' : 'idle'}
 		/>
 	</div>
-	
+
 	{#if status === 'error'}
-		<div class="text-red-500">
-			エラーが発生しました。コンソールを確認してください。
-		</div>
+		<div class="text-red-500">エラーが発生しました。コンソールを確認してください。</div>
 	{/if}
 
 	<div class="flex gap-4">
@@ -139,8 +136,6 @@
 	</div>
 
 	{#if status !== 'idle'}
-		<button class="mt-4 text-xs text-gray-400 underline" onclick={stop}>
-			強制終了 (Debug)
-		</button>
+		<button class="mt-4 text-xs text-gray-400 underline" onclick={stop}> 強制終了 (Debug) </button>
 	{/if}
 </div>
