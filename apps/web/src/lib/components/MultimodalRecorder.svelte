@@ -1,72 +1,127 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import AudioVisualizer from './AudioVisualizer.svelte';
+	import { AudioRecorder, AudioPlayer } from '$lib/audio-utils';
+	import { LiveClient } from '$lib/live-client';
+	import { getVertexAIToken } from '$lib/api';
 
 	let { oncomplete }: { oncomplete: (data: { imageSrc: string; text: string }) => void } = $props();
 
-	let status: 'idle' | 'connecting' | 'connected' | 'listening' | 'thinking' | 'speaking' =
+	let status: 'idle' | 'connecting' | 'connected' | 'listening' | 'speaking' | 'error' =
 		$state('idle');
-	let conversationCount = $state(0);
+	
+	let client: LiveClient | null = null;
+	let recorder: AudioRecorder | null = null;
+	let player: AudioPlayer | null = null;
 
-	function startConversation() {
+	async function startConversation() {
 		status = 'connecting';
-		setTimeout(() => {
-			status = 'connected';
-			startListening();
-		}, 1000);
+		try {
+			// 1. Get Access Token from backend
+			const token = await getVertexAIToken();
+			console.log('Got token for project:', token.projectId);
+			
+			// 2. Initialize WebSocket Client
+			client = new LiveClient({
+				projectId: token.projectId,
+				region: token.region,
+				accessToken: token.accessToken
+			});
+
+			// 3. Initialize Audio
+			recorder = new AudioRecorder();
+			player = new AudioPlayer();
+
+			// 4. Setup Events
+			client.addEventListener('open', () => {
+				console.log('Connected to Vertex AI Live API');
+			});
+			
+			client.addEventListener('setupComplete', async () => {
+				status = 'connected';
+				await startListening();
+			});
+
+			client.addEventListener('audio', ((e: CustomEvent) => {
+				status = 'speaking';
+				player?.play(e.detail);
+			}) as EventListener);
+			
+			client.addEventListener('turnComplete', () => {
+				status = 'listening';
+			});
+
+			client.addEventListener('close', () => {
+				console.log('Disconnected');
+				if (status !== 'idle') {
+					stop();
+				}
+			});
+
+			client.addEventListener('error', ((e: CustomEvent) => {
+				console.error('Live API error:', e.detail);
+				status = 'error';
+			}) as EventListener);
+
+			// 5. Connect
+			client.connect();
+
+		} catch (e) {
+			console.error('Failed to start conversation', e);
+			status = 'error';
+		}
 	}
 
-	function startListening() {
+	async function startListening() {
+		if (!recorder || !client) return;
+		
+		await recorder.start();
 		status = 'listening';
-		// Mock user speaking for 3 seconds
-		setTimeout(() => {
-			status = 'thinking';
-			// Mock AI thinking for 2 seconds
-			setTimeout(() => {
-				status = 'speaking';
-				// Mock AI speaking for 3 seconds
-				setTimeout(() => {
-					conversationCount++;
-					if (conversationCount >= 2) {
-						// After 2 turns, let user decide to continue or stop
-						status = 'listening'; // Go back to listening
-					} else {
-						startListening();
-					}
-				}, 3000);
-			}, 2000);
-		}, 3000);
+		
+		recorder.addEventListener('data', ((e: CustomEvent) => {
+			client?.sendAudio(e.detail);
+		}) as EventListener);
 	}
 
 	function endConversation() {
-		status = 'thinking'; // Simulate final processing
-		setTimeout(() => {
-			// Dispatch mock result
-			oncomplete({
-				imageSrc:
-					'https://images.unsplash.com/photo-1516934024742-b461fba47600?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fHN1bW1lciUyMHZpYmV8ZW58MHx8MHx8fDA%3D',
-				text: '今日はとても良い天気でした。近くの公園まで散歩に行きました。セミの声がたくさん聞こえて、夏を感じました。お昼には冷たいそうめんを食べました。'
-			});
-			status = 'idle';
-			conversationCount = 0;
-		}, 2000);
+		stop();
+		// TODO: 会話ログから絵日記を生成（後続issue）
+		oncomplete({
+			imageSrc:
+				'https://images.unsplash.com/photo-1516934024742-b461fba47600?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fHN1bW1lciUyMHZpYmV8ZW58MHx8MHx8fDA%3D',
+			text: '今日はGeminiと楽しくおしゃべりしました！'
+		});
 	}
+	
+	function stop() {
+		recorder?.stop();
+		client?.disconnect();
+		status = 'idle';
+		recorder = null;
+		client = null;
+		player = null;
+	}
+	
+	onDestroy(() => {
+		stop();
+	});
 </script>
 
 <div class="mx-auto flex w-full max-w-2xl flex-col items-center gap-8">
 	<div class="flex w-full justify-center">
 		<AudioVisualizer
-			mode={status === 'listening'
-				? 'listening'
-				: status === 'speaking'
-					? 'speaking'
-					: status === 'thinking'
-						? 'thinking'
-						: 'idle'}
+			mode={status === 'speaking' ? 'speaking' : (status === 'listening' ? 'listening' : 'idle')}
 		/>
 	</div>
+	
+	{#if status === 'error'}
+		<div class="text-red-500">
+			エラーが発生しました。コンソールを確認してください。
+		</div>
+	{/if}
 
 	<div class="flex gap-4">
-		{#if status === 'idle'}
+		{#if status === 'idle' || status === 'error'}
 			<button
 				class="rounded-full bg-linear-to-br from-blue-500 to-green-500 px-8 py-4 text-lg font-bold text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/40"
 				onclick={startConversation}
