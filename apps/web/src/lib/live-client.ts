@@ -23,7 +23,8 @@ export class LiveClient extends EventTarget {
 
 		// Vertex AI WebSocket URL with access token as query parameter
 		// Browser WebSocket API cannot set Authorization headers
-		const url = `wss://${region}-aiplatform.googleapis.com/ws/google.cloud.aiplatform.v1beta1.LlmBidiService/BidiGenerateContent?access_token=${encodeURIComponent(accessToken)}`;
+		// Documentation: https://cloud.google.com/vertex-ai/generative-ai/docs/live-api/get-started-websocket?hl=ja
+		const url = `wss://${region}-aiplatform.googleapis.com/ws/google.cloud.aiplatform.v1.LlmBidiService/BidiGenerateContent?access_token=${encodeURIComponent(accessToken)}`;
 
 		this.ws = new WebSocket(url);
 
@@ -53,7 +54,7 @@ export class LiveClient extends EventTarget {
 
 		const setupMessage = {
 			setup: {
-				model: `projects/${projectId}/locations/${region}/publishers/google/models/gemini-2.0-flash-exp`,
+				model: `projects/${projectId}/locations/${region}/publishers/google/models/gemini-live-2.5-flash-preview-native-audio-09-2025`,
 				generation_config: {
 					response_modalities: ['AUDIO']
 				}
