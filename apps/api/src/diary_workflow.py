@@ -206,12 +206,117 @@ def increment_retry(state: DiaryState) -> dict:
 
 
 def generate_image(state: DiaryState) -> dict:
-    """絵日記用の画像を生成"""
-    # TODO: Imagen 3 API を使って画像生成
-    # TODO: Cloud Storage に保存
-    # 仮実装: プレースホルダー URL
-    image_url = "https://images.unsplash.com/photo-1516934024742-b461fba47600?w=800&auto=format&fit=crop&q=60"
-    return {"image_url": image_url}
+    """絵日記用の画像を生成 (Imagen 3)"""
+    import uuid
+    from google.cloud import storage
+    import vertexai
+    from vertexai.preview.vision_models import ImageGenerationModel
+
+    diary_text = state.get("diary_text", "")
+    keywords = state.get("keywords", [])
+    document_id = state.get("document_id", "unknown")
+    log = state["conversation_log"]
+
+    # 日本語を英語に翻訳（Gemini を使用）
+    translate_prompt = f"""Translate the following Japanese text to English for image generation.
+Keep it simple and descriptive.
+
+Keywords: {', '.join(keywords)}
+Location: {log.get('location', '')}
+Activity: {log.get('activity', '')}
+Summary: {diary_text[:100]}
+
+Output format (JSON):
+{{"scene": "English description of the scene", "elements": "key visual elements"}}
+"""
+    
+    try:
+        translate_response = llm.invoke(translate_prompt)
+        translate_content = translate_response.content.strip()
+        if "```json" in translate_content:
+            translate_content = translate_content.split("```json")[1].split("```")[0].strip()
+        elif "```" in translate_content:
+            translate_content = translate_content.split("```")[1].split("```")[0].strip()
+        translated = json.loads(translate_content)
+        scene_desc = translated.get("scene", "a happy day")
+        elements = translated.get("elements", "sunshine, nature")
+    except Exception as e:
+        print(f"Translation error: {e}")
+        scene_desc = "a happy day at home"
+        elements = "warm atmosphere, family"
+    
+    # 画像生成プロンプト（英語に翻訳済み）
+    prompt = f"""A picture diary illustration in a warm, hand-drawn style.
+Scene: {scene_desc}
+Key elements: {elements}
+Style: Colorful, cheerful, simple shapes, crayon-like texture, picture diary style.
+
+Important: Bright colors, simple and cute illustration style."""
+
+    try:
+        # Vertex AI 初期化
+        vertexai.init(project=PROJECT_ID, location=REGION)
+
+        # Imagen 3 モデルをロード
+        model = ImageGenerationModel.from_pretrained("imagen-3.0-generate-002")
+
+        # 画像生成
+        print(f"Generating image with prompt: {prompt[:100]}...")
+        response = model.generate_images(
+            prompt=prompt,
+            number_of_images=1,
+            aspect_ratio="1:1",
+            safety_filter_level="block_few",
+            person_generation="allow_all",
+            language="ja",
+        )
+
+        # レスポンスをデバッグ
+        print(f"Imagen response type: {type(response)}")
+        print(f"Imagen response: {response}")
+        
+        # レスポンスから画像を取得（直接イテレート可能な場合）
+        images_list = list(response) if response else []
+        print(f"Images list length: {len(images_list)}")
+        
+        if not images_list:
+            print("No images generated")
+            return {"image_url": None}
+
+        generated_image = images_list[0]
+
+        # Cloud Storage にアップロード
+        bucket_name = os.getenv("GCS_BUCKET_NAME", f"{PROJECT_ID}-enikki-images")
+        
+        storage_client = storage.Client(project=PROJECT_ID)
+        
+        # バケットが存在しない場合は作成を試みる
+        try:
+            bucket = storage_client.bucket(bucket_name)
+            if not bucket.exists():
+                bucket = storage_client.create_bucket(bucket_name, location=REGION)
+        except Exception as e:
+            print(f"Bucket access error: {e}")
+            bucket = storage_client.bucket(bucket_name)
+
+        # ファイル名を生成
+        filename = f"diaries/{document_id}/{uuid.uuid4()}.png"
+        blob = bucket.blob(filename)
+
+        # 画像データをアップロード
+        image_bytes = generated_image._image_bytes
+        blob.upload_from_string(image_bytes, content_type="image/png")
+
+        # 公開URL（バケットレベルでallUsers読み取り権限設定済み）
+        image_url = f"https://storage.googleapis.com/{bucket_name}/{filename}"
+
+        print(f"Image uploaded: {image_url}")
+        return {"image_url": image_url}
+
+    except Exception as e:
+        print(f"Error generating image: {e}")
+        # フォールバック: プレースホルダー
+        return {"image_url": "https://images.unsplash.com/photo-1516934024742-b461fba47600?w=800&auto=format&fit=crop&q=60"}
 
 
 def fallback(state: DiaryState) -> dict:
