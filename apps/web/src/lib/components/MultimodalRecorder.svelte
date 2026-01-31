@@ -137,4 +137,10 @@
 			</button>
 		{/if}
 	</div>
+
+	{#if status !== 'idle'}
+		<button class="mt-4 text-xs text-gray-400 underline" onclick={stop}>
+			強制終了 (Debug)
+		</button>
+	{/if}
 </div>
