@@ -53,11 +53,11 @@ def extract_keywords(state: DiaryState) -> dict:
 キーワードは名詞や動詞など、絵に描きやすいものを選んでください。
 
 会話ログ:
-- 日付: {log.get('date', '不明')}
-- 場所: {log.get('location', '不明')}
-- 活動: {log.get('activity', '不明')}
-- 感想: {log.get('feeling', '不明')}
-- 要約: {log.get('summary', '')}
+- 日付: {log.get("date", "不明")}
+- 場所: {log.get("location", "不明")}
+- 活動: {log.get("activity", "不明")}
+- 感想: {log.get("feeling", "不明")}
+- 要約: {log.get("summary", "")}
 
 JSON形式で出力してください（キーワードの配列のみ）:
 ["キーワード1", "キーワード2", "キーワード3", "キーワード4"]
@@ -94,11 +94,11 @@ def generate_diary(state: DiaryState) -> dict:
     prompt = f"""以下の情報を元に、小学生が書くような「ぼくの夏休み」風の絵日記テキストを生成してください。
 ただし、実際の読者は大人なので、大人がクスッと笑える要素を入れてください。
 
-キーワード: {', '.join(keywords)}
-場所: {log.get('location', '')}
-活動: {log.get('activity', '')}
-感想: {log.get('feeling', '')}
-ジョークのヒント: {joke_hint if joke_hint else 'なし（自由に考えてください）'}
+キーワード: {", ".join(keywords)}
+場所: {log.get("location", "")}
+活動: {log.get("activity", "")}
+感想: {log.get("feeling", "")}
+ジョークのヒント: {joke_hint if joke_hint else "なし（自由に考えてください）"}
 
 ## ルール
 - 100〜150文字程度
@@ -221,22 +221,26 @@ def generate_image(state: DiaryState) -> dict:
     translate_prompt = f"""Translate the following Japanese text to English for image generation.
 Keep it simple and descriptive.
 
-Keywords: {', '.join(keywords)}
-Location: {log.get('location', '')}
-Activity: {log.get('activity', '')}
+Keywords: {", ".join(keywords)}
+Location: {log.get("location", "")}
+Activity: {log.get("activity", "")}
 Summary: {diary_text[:100]}
 
 Output format (JSON):
 {{"scene": "English description of the scene", "elements": "key visual elements"}}
 """
-    
+
     try:
         translate_response = llm.invoke(translate_prompt)
         translate_content = translate_response.content.strip()
         if "```json" in translate_content:
-            translate_content = translate_content.split("```json")[1].split("```")[0].strip()
+            translate_content = (
+                translate_content.split("```json")[1].split("```")[0].strip()
+            )
         elif "```" in translate_content:
-            translate_content = translate_content.split("```")[1].split("```")[0].strip()
+            translate_content = (
+                translate_content.split("```")[1].split("```")[0].strip()
+            )
         translated = json.loads(translate_content)
         scene_desc = translated.get("scene", "a happy day")
         elements = translated.get("elements", "sunshine, nature")
@@ -244,7 +248,7 @@ Output format (JSON):
         print(f"Translation error: {e}")
         scene_desc = "a happy day at home"
         elements = "warm atmosphere, family"
-    
+
     # 画像生成プロンプト（英語に翻訳済み）
     prompt = f"""A picture diary illustration in a warm, hand-drawn style.
 Scene: {scene_desc}
@@ -274,11 +278,11 @@ Important: Bright colors, simple and cute illustration style."""
         # レスポンスをデバッグ
         print(f"Imagen response type: {type(response)}")
         print(f"Imagen response: {response}")
-        
+
         # レスポンスから画像を取得（直接イテレート可能な場合）
         images_list = list(response) if response else []
         print(f"Images list length: {len(images_list)}")
-        
+
         if not images_list:
             print("No images generated")
             return {"image_url": None}
@@ -287,9 +291,9 @@ Important: Bright colors, simple and cute illustration style."""
 
         # Cloud Storage にアップロード
         bucket_name = os.getenv("GCS_BUCKET_NAME", f"{PROJECT_ID}-enikki-images")
-        
+
         storage_client = storage.Client(project=PROJECT_ID)
-        
+
         # バケットが存在しない場合は作成を試みる
         try:
             bucket = storage_client.bucket(bucket_name)
@@ -316,7 +320,9 @@ Important: Bright colors, simple and cute illustration style."""
     except Exception as e:
         print(f"Error generating image: {e}")
         # フォールバック: プレースホルダー
-        return {"image_url": "https://images.unsplash.com/photo-1516934024742-b461fba47600?w=800&auto=format&fit=crop&q=60"}
+        return {
+            "image_url": "https://images.unsplash.com/photo-1516934024742-b461fba47600?w=800&auto=format&fit=crop&q=60"
+        }
 
 
 def fallback(state: DiaryState) -> dict:
@@ -354,7 +360,7 @@ def build_diary_workflow() -> StateGraph:
     graph.add_edge(START, "extract_keywords")
     graph.add_edge("extract_keywords", "generate_diary")
     graph.add_edge("generate_diary", "check_quality")
-    
+
     # 条件分岐: 品質チェック後
     graph.add_conditional_edges(
         "check_quality",
@@ -393,6 +399,6 @@ def run_diary_workflow(document_id: str, conversation_log: dict) -> DiaryState:
         "status": "pending",
         "error": None,
     }
-    
+
     result = diary_workflow.invoke(initial_state)
     return result
