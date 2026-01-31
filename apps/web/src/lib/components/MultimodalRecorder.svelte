@@ -3,7 +3,7 @@
 	import AudioVisualizer from './AudioVisualizer.svelte';
 	import { AudioRecorder, AudioPlayer } from '$lib/audio-utils';
 	import { LiveClient } from '$lib/live-client';
-	import { getVertexAIToken } from '$lib/api';
+	import { getVertexAIToken, createDiary } from '$lib/api';
 
 	let { oncomplete }: { oncomplete: (data: { imageSrc: string; text: string }) => void } = $props();
 
@@ -70,12 +70,27 @@
 					// args are already an object
 					const args = functionCall.args;
 
-					// Complete the conversation with structured data
-					oncomplete({
-						imageSrc:
-							'https://images.unsplash.com/photo-1516934024742-b461fba47600?w=800&auto=format&fit=crop&q=60', // Placeholder for now
-						text: args.summary || JSON.stringify(args, null, 2)
-					});
+					// Send log to backend
+					createDiary({
+						date: args.date || new Date().toISOString().split('T')[0],
+						location: args.location,
+						activity: args.activity,
+						feeling: args.feeling,
+						summary: args.summary
+					})
+						.then((response) => {
+							console.log('Diary created:', response);
+							// Complete the conversation with structured data
+							oncomplete({
+								imageSrc:
+									'https://images.unsplash.com/photo-1516934024742-b461fba47600?w=800&auto=format&fit=crop&q=60', // Placeholder for now
+								text: args.summary || JSON.stringify(args, null, 2)
+							});
+						})
+						.catch((err) => {
+							console.error('Failed to create diary:', err);
+							alert('日記の保存に失敗しました。');
+						});
 				}
 			}) as EventListener);
 
