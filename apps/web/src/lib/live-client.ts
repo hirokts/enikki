@@ -49,7 +49,6 @@ export class LiveClient extends EventTarget {
 		};
 	}
 
-
 	private sendSetupMessage() {
 		const { projectId, region } = this.config;
 

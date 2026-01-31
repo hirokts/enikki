@@ -36,13 +36,13 @@ An API Key is required to access the backend API (`/auth/token`).
 Run the following in your browser's Developer Tools (Console):
 
 ```js
-localStorage.setItem('apiKey', 'YOUR_API_KEY')
+localStorage.setItem('apiKey', 'YOUR_API_KEY');
 ```
 
 Reload the page, and the authentication status will be displayed in the console:
+
 - ✅ Success: `API Key 認証成功!`
 - ❌ Failure: `API Key 認証失敗: Invalid API Key`
-
 
 ## Building
 
