@@ -3,7 +3,7 @@ import os
 
 import google.auth
 import google.auth.transport.requests
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import firestore
 from pydantic import BaseModel
@@ -101,47 +101,16 @@ def get_auth_token(api_key: str = Header(..., alias="X-API-Key")):
     )
 
 
-@app.post("/diaries", response_model=DiaryResponse)
-def create_diary(
-    request: ConversationLogRequest, api_key: str = Header(..., alias="X-API-Key")
-):
-    """
-    会話ログ（要約データ）を受け取り、Firestoreに保存し、
-    LangGraph ワークフローで絵日記を生成する。
-    """
-    # API Key 検証
-    verify_api_key(api_key)
-
-    if not db:
-        raise HTTPException(status_code=500, detail="Firestore database not connected")
+def process_diary_in_background(document_id: str, conversation_log: dict):
+    """バックグラウンドで絵日記ワークフローを実行"""
+    from src.diary_workflow import run_diary_workflow
 
     try:
-        # 保存するデータの構築
-        doc_data = request.model_dump()
-        doc_data.update(
-            {
-                "userId": "test-user",  # プレースホルダー
-                "status": "processing",  # 処理中
-                "createdAt": datetime.datetime.now(datetime.timezone.utc),
-                "updatedAt": datetime.datetime.now(datetime.timezone.utc),
-            }
-        )
-
-        # Firestore に保存 (自動生成ID)
-        update_time, doc_ref = db.collection("diaries").add(doc_data)
-        document_id = doc_ref.id
-
-        # LangGraph ワークフローを実行
-        from src.diary_workflow import run_diary_workflow
-
-        conversation_log = {
-            "date": request.date,
-            "location": request.location,
-            "activity": request.activity,
-            "feeling": request.feeling,
-            "summary": request.summary,
-            "joke_hint": request.joke_hint,
-        }
+        # ステータスを processing に更新
+        db.collection("diaries").document(document_id).update({
+            "status": "processing",
+            "updatedAt": datetime.datetime.now(datetime.timezone.utc),
+        })
 
         result = run_diary_workflow(document_id, conversation_log)
 
@@ -156,9 +125,68 @@ def create_diary(
         if result.get("error"):
             update_data["error"] = result["error"]
 
-        doc_ref.update(update_data)
+        db.collection("diaries").document(document_id).update(update_data)
+        print(f"Diary {document_id} completed successfully")
+    except Exception as e:
+        # エラー時は Firestore にエラーを記録
+        print(f"Error processing diary {document_id}: {e}")
+        db.collection("diaries").document(document_id).update({
+            "status": "failed",
+            "error": str(e),
+            "updatedAt": datetime.datetime.now(datetime.timezone.utc),
+        })
 
-        return DiaryResponse(id=document_id, status=result.get("status", "completed"))
+
+@app.post("/diaries", response_model=DiaryResponse)
+def create_diary(
+    request: ConversationLogRequest,
+    background_tasks: BackgroundTasks,
+    api_key: str = Header(..., alias="X-API-Key"),
+):
+    """
+    会話ログ（要約データ）を受け取り、Firestoreに保存し、
+    バックグラウンドで LangGraph ワークフローを実行する。
+
+    即座に `status: pending` を返し、処理はバックグラウンドで実行される。
+    フロントエンドは Firestore リアルタイムリスナーでステータス変更を監視する。
+    """
+    # API Key 検証
+    verify_api_key(api_key)
+
+    if not db:
+        raise HTTPException(status_code=500, detail="Firestore database not connected")
+
+    try:
+        # 保存するデータの構築
+        doc_data = request.model_dump()
+        doc_data.update(
+            {
+                "userId": "test-user",  # プレースホルダー
+                "status": "pending",  # 待機中
+                "createdAt": datetime.datetime.now(datetime.timezone.utc),
+                "updatedAt": datetime.datetime.now(datetime.timezone.utc),
+            }
+        )
+
+        # Firestore に保存 (自動生成ID)
+        update_time, doc_ref = db.collection("diaries").add(doc_data)
+        document_id = doc_ref.id
+
+        # 会話ログを構築
+        conversation_log = {
+            "date": request.date,
+            "location": request.location,
+            "activity": request.activity,
+            "feeling": request.feeling,
+            "summary": request.summary,
+            "joke_hint": request.joke_hint,
+        }
+
+        # バックグラウンドでワークフローを実行
+        background_tasks.add_task(process_diary_in_background, document_id, conversation_log)
+
+        # 即座に pending ステータスを返す
+        return DiaryResponse(id=document_id, status="pending")
     except Exception as e:
         print(f"Error creating diary: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to create diary: {str(e)}")
