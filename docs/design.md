@@ -28,7 +28,7 @@
 - **Frontend**: SvelteKit @ Firebase App Hosting
 - **Backend**: Python / FastAPI @ Cloud Run
 - **DB/Storage**: Firestore, Cloud Storage
-- **AI**: Gemini Pro 2.0 (Vertex AI), Imagen 3
+- **AI**: Gemini Pro 2.0 (Vertex AI), Gemini 2.5 Flash Image (画像生成)
 
 ### 各コンポーネントの役割
 
@@ -127,7 +127,7 @@ flowchart TD
 | `extract` | 会話ログから4つのキーワードを抽出 | Gemini Pro |
 | `generate` | キーワードを元に「ぼくの夏休み」風の日記テキスト生成 | Gemini Pro |
 | `check` | 生成された文章の品質評価（子供らしさ、絵日記らしさ） | Gemini Pro |
-| `image` | 日記テキストを元に絵日記風の画像を生成 | Imagen 3 |
+| `image` | 日記テキストを元に絵日記風の画像を生成 | Gemini 2.5 Flash Image |
 | `save` | 結果を Firestore に保存、ステータスを `completed` に更新 | Firestore |
 
 ### 状態管理 (State)
