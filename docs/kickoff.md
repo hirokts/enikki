@@ -436,3 +436,4 @@ Would you like me to **provide a minimal React example for the Multimodal Live A
 
 #### 2026-02-04
 - Image生成をGemini 2.5 Flash Image(Nano Banana)に変更
+- APIの処理をバックグラウンドタスク化
