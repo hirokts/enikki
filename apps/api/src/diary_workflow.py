@@ -206,11 +206,12 @@ def increment_retry(state: DiaryState) -> dict:
 
 
 def generate_image(state: DiaryState) -> dict:
-    """絵日記用の画像を生成 (Imagen 3)"""
+    """絵日記用の画像を生成 (Gemini 2.5 Flash Image)"""
     import uuid
+    from io import BytesIO
     from google.cloud import storage
-    import vertexai
-    from vertexai.preview.vision_models import ImageGenerationModel
+    from google import genai
+    from google.genai import types
 
     diary_text = state.get("diary_text", "")
     keywords = state.get("keywords", [])
@@ -258,43 +259,44 @@ Style: Colorful, cheerful, simple shapes, crayon-like texture, picture diary sty
 Important: Bright colors, simple and cute illustration style."""
 
     try:
-        # Vertex AI 初期化
-        vertexai.init(project=PROJECT_ID, location=REGION)
-
-        # Imagen 3 モデルをロード
-        model = ImageGenerationModel.from_pretrained("imagen-3.0-generate-002")
-
-        # 画像生成
-        print(f"Generating image with prompt: {prompt[:100]}...")
-        response = model.generate_images(
-            prompt=prompt,
-            number_of_images=1,
-            aspect_ratio="1:1",
-            safety_filter_level="block_few",
-            person_generation="allow_all",
-            language="ja",
+        # Gemini 2.5 Flash Image クライアント作成
+        # us-central1 で利用可能
+        client = genai.Client(
+            vertexai=True,
+            project=PROJECT_ID,
+            location="us-central1"
         )
 
-        # レスポンスをデバッグ
-        print(f"Imagen response type: {type(response)}")
-        print(f"Imagen response: {response}")
+        # 画像生成
+        print(f"Generating image with Gemini 2.5 Flash Image: {prompt[:100]}...")
+        response = client.models.generate_content(
+            model="gemini-2.5-flash-image",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_modalities=["IMAGE"],
+                image_config=types.ImageConfig(
+                    aspect_ratio="1:1",
+                ),
+            ),
+        )
 
-        # レスポンスから画像を取得（直接イテレート可能な場合）
-        images_list = list(response) if response else []
-        print(f"Images list length: {len(images_list)}")
+        # レスポンスから画像を取得
+        image_data = None
+        for part in response.parts:
+            if part.inline_data:
+                print(f"Image generated! MIME type: {part.inline_data.mime_type}")
+                # inline_data.data から直接バイトデータを取得
+                image_data = part.inline_data.data
+                break
 
-        if not images_list:
-            print("No images generated")
+        if not image_data:
+            print("No image generated in response")
             return {"image_url": None}
-
-        generated_image = images_list[0]
 
         # Cloud Storage にアップロード
         bucket_name = os.getenv("GCS_BUCKET_NAME", f"{PROJECT_ID}-enikki-images")
-
         storage_client = storage.Client(project=PROJECT_ID)
 
-        # バケットが存在しない場合は作成を試みる
         try:
             bucket = storage_client.bucket(bucket_name)
             if not bucket.exists():
@@ -308,8 +310,7 @@ Important: Bright colors, simple and cute illustration style."""
         blob = bucket.blob(filename)
 
         # 画像データをアップロード
-        image_bytes = generated_image._image_bytes
-        blob.upload_from_string(image_bytes, content_type="image/png")
+        blob.upload_from_string(image_data, content_type="image/png")
 
         # 公開URL（バケットレベルでallUsers読み取り権限設定済み）
         image_url = f"https://storage.googleapis.com/{bucket_name}/{filename}"
@@ -319,6 +320,8 @@ Important: Bright colors, simple and cute illustration style."""
 
     except Exception as e:
         print(f"Error generating image: {e}")
+        import traceback
+        traceback.print_exc()
         # フォールバック: プレースホルダー
         return {
             "image_url": "https://images.unsplash.com/photo-1516934024742-b461fba47600?w=800&auto=format&fit=crop&q=60"
