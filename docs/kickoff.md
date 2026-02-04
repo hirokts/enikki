@@ -433,3 +433,6 @@ Would you like me to **provide a minimal React example for the Multimodal Live A
 - 画像保存用バケットを作成
     - バケットを公開アクセス可能にした（画像を直接URLでアクセス可能にするため）
 - 日記本文の生成と画像生成のワークフローを実装
+
+#### 2026-02-04
+- Image生成をGemini 2.5 Flash Image(Nano Banana)に変更
