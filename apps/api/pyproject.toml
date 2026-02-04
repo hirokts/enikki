@@ -13,8 +13,10 @@ dependencies = [
     "google-cloud-aiplatform>=1.134.0",
     "google-cloud-firestore>=2.23.0",
     "google-cloud-storage>=3.8.0",
+    "google-genai>=1.60.0",
     "langchain-google-vertexai>=3.2.2",
     "langgraph>=1.0.7",
+    "pillow>=12.1.0",
     "pydantic>=2.12.5",
     "uvicorn>=0.40.0",
 ]
