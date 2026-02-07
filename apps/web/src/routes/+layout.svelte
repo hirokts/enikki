@@ -1,21 +1,41 @@
 <script lang="ts">
 	import '../app.css';
+	import { onMount } from 'svelte';
+	import type { Snippet } from 'svelte';
+
+	let { children }: { children: Snippet } = $props();
+	let isScrolled = $state(false);
+
+	onMount(() => {
+		const handleScroll = () => {
+			isScrolled = window.scrollY > 50;
+		};
+		window.addEventListener('scroll', handleScroll);
+		return () => window.removeEventListener('scroll', handleScroll);
+	});
 </script>
 
-<div class="flex min-h-screen flex-col bg-gray-50 font-body text-gray-800">
-	<header class="flex justify-center p-6">
-		<h1
-			class="bg-linear-to-br from-blue-500 to-red-500 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent"
-		>
-			Enikki
-		</h1>
+<div class="flex min-h-screen flex-col bg-background font-sans text-foreground">
+	<header
+		class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 {isScrolled
+			? 'bg-card/95 backdrop-blur-sm shadow-md'
+			: 'bg-transparent'}"
+	>
+		<nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+			<a
+				href="/"
+				class="text-xl font-bold transition-colors {isScrolled ? 'text-primary' : 'text-card'}"
+			>
+				<span class="text-accent">絵</span>日記
+			</a>
+		</nav>
 	</header>
 
-	<main class="flex flex-1 flex-col items-center px-8 py-8">
-		<slot />
+	<main class="flex flex-1 flex-col">
+		{@render children()}
 	</main>
 
-	<footer class="p-8 text-center text-xs text-gray-400">
-		<p>&copy; 2025 Enikki Project</p>
+	<footer class="bg-card/80 p-8 text-center text-xs text-muted-foreground backdrop-blur-sm">
+		<p>&copy; 2025 絵日記プロジェクト</p>
 	</footer>
 </div>

@@ -9,6 +9,7 @@
 
 	let status: 'idle' | 'connecting' | 'connected' | 'listening' | 'speaking' | 'error' =
 		$state('idle');
+	let isFirstListening = $state(true);
 
 	let client: LiveClient | null = null;
 	let recorder: AudioRecorder | null = null;
@@ -44,6 +45,7 @@
 
 			client.addEventListener('audio', ((e: CustomEvent) => {
 				status = 'speaking';
+				isFirstListening = false; // AIが話し始めたので初回フラグをオフ
 				player?.play(e.detail);
 			}) as EventListener);
 
@@ -148,21 +150,27 @@
 		/>
 	</div>
 
-	{#if status === 'error'}
-		<div class="text-red-500">エラーが発生しました。コンソールを確認してください。</div>
+	{#if status === 'connecting'}
+		<p class="animate-pulse text-center text-muted-foreground">接続中...</p>
+	{:else if (status === 'connected' || status === 'listening') && isFirstListening}
+		<p class="text-center text-foreground">
+			<span class="text-lg">🎤</span> 「こんにちは」と話しかけてみてください
+		</p>
+	{:else if status === 'error'}
+		<div class="rounded-lg bg-destructive/20 px-4 py-2 text-destructive">エラーが発生しました。コンソールを確認してください。</div>
 	{/if}
 
 	<div class="flex gap-4">
 		{#if status === 'idle' || status === 'error'}
 			<button
-				class="rounded-full bg-linear-to-br from-blue-500 to-green-500 px-8 py-4 text-lg font-bold text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/40"
+				class="rounded-full bg-gradient-to-br from-primary to-accent px-8 py-4 text-lg font-bold text-primary-foreground shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-accent/40"
 				onclick={startConversation}
 			>
 				話しかける
 			</button>
 		{:else}
 			<button
-				class="rounded-full border border-gray-300 bg-gray-100 px-8 py-4 text-lg font-bold text-gray-800 transition-all duration-200 hover:bg-gray-200"
+				class="rounded-full border-2 border-border bg-card px-8 py-4 text-lg font-bold text-foreground transition-all duration-200 hover:bg-muted"
 				onclick={endConversation}
 			>
 				日記にする
@@ -171,6 +179,6 @@
 	</div>
 
 	{#if status !== 'idle'}
-		<button class="mt-4 text-xs text-gray-400 underline" onclick={stop}> 強制終了 (Debug) </button>
+		<button class="mt-4 text-xs text-muted-foreground underline" onclick={stop}> 強制終了 (Debug) </button>
 	{/if}
 </div>
