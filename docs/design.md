@@ -91,7 +91,7 @@
     * Gemini 用のトークン発行エンドポイントの作成。
     * 会話終了後に「4単語を抽出 → 日記作成 → 画像生成」を行う非同期ジョブの実装。
     * Firestore のデータ更新
-    * Notion や Slack への通知連携。
+    * Discord や Slack への通知連携。
 
 
 ### ローカル開発 (Docker Compose)
