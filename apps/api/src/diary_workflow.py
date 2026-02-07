@@ -337,9 +337,26 @@ def fallback(state: DiaryState) -> dict:
 
 
 def save_result(state: DiaryState) -> dict:
-    """結果を Firestore に保存"""
-    # TODO: Firestore への保存処理
-    # 仮実装: ステータスを完了に
+    """結果を Firestore に保存し、Discord に通知"""
+    from src.discord_notifier import send_discord_notification_sync
+
+    # Discord通知を送信
+    log = state["conversation_log"]
+    document_id = state.get("document_id")
+    title = log.get("date", "今日の絵日記")
+    diary_text = state.get("diary_text", "")
+    image_url = state.get("image_url")
+    keywords = state.get("keywords")
+
+    if diary_text:
+        send_discord_notification_sync(
+            title=title,
+            diary_text=diary_text,
+            diary_id=document_id,
+            image_url=image_url,
+            keywords=keywords,
+        )
+
     return {"status": "completed"}
 
 
