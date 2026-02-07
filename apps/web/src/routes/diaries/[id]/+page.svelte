@@ -2,13 +2,13 @@
 	import DiaryCard from '$lib/components/DiaryCard.svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { onMount, onDestroy } from 'svelte';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { getVertexAIToken } from '$lib/api';
 	import { doc, getDoc, onSnapshot, type Firestore } from 'firebase/firestore';
 	import { initializeFirebase } from '$lib/firebase';
 
 	let db: Firestore | null = null;
-	let diaryId: string = $derived($page.params.id);
+	let diaryId: string = $derived(page.params.id ?? '');
 
 	let diaryStatus: 'pending' | 'processing' | 'completed' | 'failed' | null = $state(null);
 	let generatedDiary: { imageSrc: string; text: string; date?: string } | null = $state(null);
