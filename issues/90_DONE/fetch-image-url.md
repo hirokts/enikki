@@ -7,18 +7,18 @@
 
 ## Tasks
 
-- [ ] **Firestore 購読処理の実装**
-  - [ ] `id` を指定して Firestore の `diaries` ドキュメントをリアルタイム購読 (onSnapshot) する
-  - [ ] ステータス (`pending`, `processing`, `completed`, `failed`) に応じたUI制御
+- [x] **Firestore 購読処理の実装**
+  - [x] `id` を指定して Firestore の `diaries` ドキュメントをリアルタイム購読 (onSnapshot) する
+  - [x] ステータス (`pending`, `processing`, `completed`, `failed`) に応じたUI制御
 
-- [ ] **UI実装**
-  - [ ] **Loading/Processing**: 「日記を書いています...」「絵を描いています...」などの待機画面
-  - [ ] **Completed**: 絵日記画像の表示 (`imageUrl`) と日記本文 (`diaryText`) の表示
-  - [ ] **Failed**: エラーメッセージの表示と再試行ボタン（必要であれば）
+- [x] **UI実装**
+  - [x] **Loading/Processing**: 「日記を書いています...」「絵を描いています...」などの待機画面
+  - [x] **Completed**: 絵日記画像の表示 (`imageUrl`) と日記本文 (`diaryText`) の表示
+  - [x] **Failed**: エラーメッセージの表示と再試行ボタン（必要であれば）
 
-- [ ] **画像アクセスの確認**
-  - [ ] 生成された GCS の URL がフロントエンドからアクセス可能か検証する
-  - [ ] 必要に応じて GCS バケットの公開設定 (`allUsers` への `Storage Object Viewer` 付与) または署名付きURLの発行を検討
+- [x] **画像アクセスの確認**
+  - [x] 生成された GCS の URL がフロントエンドからアクセス可能か検証する
+  - [x] 必要に応じて GCS バケットの公開設定 (`allUsers` への `Storage Object Viewer` 付与) または署名付きURLの発行を検討
 
 ## Notes
 
