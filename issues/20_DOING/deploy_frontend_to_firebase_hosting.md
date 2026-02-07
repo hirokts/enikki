@@ -26,7 +26,7 @@ firebase deploy --only hosting
 ```
 
 ### 環境変数（フロントエンド）
-- `PUBLIC_API_URL`: Cloud Run の本番URL（例: https://enikki-api-xxxxx-an.a.run.app）
+- `VITE_API_URL`: Cloud Run の本番URL（例: https://enikki-api-xxxxx-an.a.run.app）
 
 ### firebase.json 設定例
 ```json
