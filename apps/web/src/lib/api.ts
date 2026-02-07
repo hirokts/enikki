@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:8000';
+// API URL (from environment variable or default to localhost)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 /**
  * API Key を取得（localStorage から）
