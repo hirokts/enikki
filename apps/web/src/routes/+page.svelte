@@ -8,8 +8,10 @@
 	import { initializeFirebase } from '$lib/firebase';
 
 	let db: Firestore | null = null;
+	let isLoaded = $state(false);
 
 	onMount(async () => {
+		isLoaded = true;
 		const result = await checkApiKeyStatus();
 		if (result) {
 			// Initialize Firebase with project ID from backend
@@ -18,6 +20,14 @@
 			setLogLevel('debug');
 		}
 	});
+
+	// Generate snow particles
+	const snowParticles = Array.from({ length: 50 }, (_, i) => ({
+		id: i,
+		left: Math.random() * 100,
+		delay: Math.random() * 5,
+		duration: 5 + Math.random() * 5
+	}));
 
 	let diaryId: string | null = $state(null);
 	let diaryStatus: 'pending' | 'processing' | 'completed' | 'failed' | null = $state(null);
@@ -79,29 +89,130 @@
 	});
 </script>
 
-<div class="flex min-h-[60vh] w-full max-w-4xl flex-col items-center justify-center">
-	{#if !diaryId}
-		<!-- 初期画面: レコーダー表示 -->
-		<div class="flex w-full flex-col items-center" out:fade>
-			<div class="mb-12 text-center">
-				<h2
-					class="mb-4 bg-linear-to-br from-gray-700 to-gray-500 bg-clip-text text-4xl leading-tight font-extrabold text-transparent sm:text-5xl"
+<!-- Hero Section with Background -->
+<section class="relative min-h-screen overflow-hidden">
+	<!-- Background Image -->
+	<div class="absolute inset-0">
+		<img
+			src="/images/winter-hero.jpg"
+			alt="冬の風景"
+			class="h-full w-full object-cover"
+		/>
+		<!-- Overlay for better readability -->
+		<div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/90"></div>
+	</div>
+
+	<!-- Snow Animation -->
+	<div class="pointer-events-none absolute inset-0 overflow-hidden">
+		{#each snowParticles as particle (particle.id)}
+			<div
+				class="animate-snow absolute h-2 w-2 rounded-full bg-white/80"
+				style="left: {particle.left}%; animation-delay: {particle.delay}s; animation-duration: {particle.duration}s;"
+			></div>
+		{/each}
+	</div>
+
+	<!-- Content -->
+	<div class="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 pt-16">
+		{#if !diaryId}
+			<!-- 初期画面: レコーダー表示 -->
+			<div class="flex w-full flex-col items-center" out:fade>
+				<!-- Title Box -->
+				<div
+					class="mb-8 transform rounded-lg border-4 border-primary bg-card/95 p-8 shadow-2xl backdrop-blur-sm transition-all duration-1000 md:p-12 {isLoaded
+						? 'translate-y-0 opacity-100'
+						: 'translate-y-10 opacity-0'}"
 				>
-					あなたの今日を、<br />絵日記にしませんか？
-				</h2>
-				<p class="text-lg text-gray-500">AIとお話しするだけで、素敵な思い出として記録します。</p>
+					<div class="text-center">
+						<!-- Pixel-style subtitle -->
+						<p class="mb-4 font-pixel text-sm tracking-[0.3em] text-muted-foreground md:text-base">
+							ぼくの
+						</p>
+
+						<!-- Main Title -->
+						<h1 class="mb-2 text-5xl font-bold tracking-tight text-primary md:text-7xl lg:text-8xl">
+							<span class="text-accent">絵</span>日記
+						</h1>
+
+						<!-- English subtitle -->
+						<p class="mt-4 text-xs uppercase tracking-[0.5em] text-muted-foreground md:text-sm">
+							My Picture Diary
+						</p>
+					</div>
+				</div>
+
+				<!-- Tagline -->
+				<div
+					class="mb-8 transition-all delay-500 duration-1000 {isLoaded
+						? 'translate-y-0 opacity-100'
+						: 'translate-y-10 opacity-0'}"
+				>
+					<p class="rounded-full bg-card/80 px-6 py-3 text-sm text-card-foreground/90 backdrop-blur-sm md:text-base">
+						AIとお話しするだけで、素敵な思い出を記録します
+					</p>
+				</div>
+
+				<!-- Recorder -->
+				<div
+					class="w-full max-w-2xl rounded-2xl bg-card/90 p-6 shadow-xl backdrop-blur-sm transition-all delay-700 duration-1000 {isLoaded
+						? 'translate-y-0 opacity-100'
+						: 'translate-y-10 opacity-0'}"
+				>
+					<MultimodalRecorder oncomplete={handleComplete} />
+				</div>
 			</div>
-			<MultimodalRecorder oncomplete={handleComplete} />
-		</div>
-	{:else if diaryStatus === 'pending' || diaryStatus === 'processing'}
-		<!-- 生成中画面 -->
-		<div class="flex flex-col items-center gap-6" in:fade>
-			<div class="relative flex h-32 w-32 items-center justify-center">
-				<div class="absolute inset-0 animate-ping rounded-full bg-blue-100 opacity-75"></div>
-				<div class="relative flex h-24 w-24 items-center justify-center rounded-full bg-blue-50">
+		{:else if diaryStatus === 'pending' || diaryStatus === 'processing'}
+			<!-- 生成中画面 -->
+			<div class="flex flex-col items-center gap-6 rounded-2xl bg-card/95 p-12 shadow-2xl backdrop-blur-sm" in:fade>
+				<div class="relative flex h-32 w-32 items-center justify-center">
+					<div class="absolute inset-0 animate-ping rounded-full bg-accent/30 opacity-75"></div>
+					<div class="relative flex h-24 w-24 items-center justify-center rounded-full bg-accent/20">
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							class="h-12 w-12 animate-bounce text-accent"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+							/>
+						</svg>
+					</div>
+				</div>
+				<div class="text-center">
+					<h3 class="text-2xl font-bold text-foreground">
+						{#if diaryStatus === 'pending'}
+							日記の準備をしています...
+						{:else}
+							絵を描いています...
+						{/if}
+					</h3>
+					<p class="mt-2 text-muted-foreground">少し時間がかかります。そのままお待ちください。</p>
+					<p class="mt-4 font-mono text-xs text-muted-foreground/50">ID: {diaryId}</p>
+				</div>
+			</div>
+		{:else if diaryStatus === 'completed' && generatedDiary}
+			<!-- 完了画面 -->
+			<div class="flex flex-col items-center gap-8" in:fly={{ y: 50, duration: 800, delay: 200 }}>
+				<DiaryCard imageSrc={generatedDiary.imageSrc} text={generatedDiary.text} />
+				<button
+					class="font-semibold text-accent underline decoration-accent/30 underline-offset-4 opacity-80 transition-all hover:decoration-accent hover:opacity-100"
+					onclick={reset}
+				>
+					もう一度記録する
+				</button>
+			</div>
+		{:else if diaryStatus === 'failed'}
+			<!-- エラー画面 -->
+			<div class="flex flex-col items-center gap-6 rounded-2xl bg-card/95 p-12 text-center shadow-2xl backdrop-blur-sm" in:fade>
+				<div class="flex h-24 w-24 items-center justify-center rounded-full bg-destructive/20 text-destructive">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
-						class="h-12 w-12 animate-bounce text-blue-500"
+						class="h-12 w-12"
 						fill="none"
 						viewBox="0 0 24 24"
 						stroke="currentColor"
@@ -110,63 +221,21 @@
 							stroke-linecap="round"
 							stroke-linejoin="round"
 							stroke-width="2"
-							d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+							d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
 						/>
 					</svg>
 				</div>
-			</div>
-			<div class="text-center">
-				<h3 class="text-2xl font-bold text-gray-800">
-					{#if diaryStatus === 'pending'}
-						日記の準備をしています...
-					{:else}
-						絵を描いています...
-					{/if}
-				</h3>
-				<p class="mt-2 text-gray-500">少し時間がかかります。そのままお待ちください。</p>
-				<p class="mt-4 text-xs font-mono text-gray-400">ID: {diaryId}</p>
-			</div>
-		</div>
-	{:else if diaryStatus === 'completed' && generatedDiary}
-		<!-- 完了画面 -->
-		<div class="flex flex-col items-center gap-8" in:fly={{ y: 50, duration: 800, delay: 200 }}>
-			<DiaryCard imageSrc={generatedDiary.imageSrc} text={generatedDiary.text} />
-			<button
-				class="font-semibold text-blue-500 underline decoration-blue-500/30 underline-offset-4 opacity-80 transition-all hover:decoration-blue-500 hover:opacity-100"
-				onclick={reset}
-			>
-				もう一度記録する
-			</button>
-		</div>
-	{:else if diaryStatus === 'failed'}
-		<!-- エラー画面 -->
-		<div class="flex flex-col items-center gap-6 text-center" in:fade>
-			<div class="flex h-24 w-24 items-center justify-center rounded-full bg-red-100 text-red-500">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="h-12 w-12"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
+				<div>
+					<h3 class="text-xl font-bold text-foreground">エラーが発生しました</h3>
+					<p class="mt-2 text-muted-foreground">{error}</p>
+				</div>
+				<button
+					class="rounded-full bg-muted px-6 py-2 font-bold text-foreground hover:bg-muted/80"
+					onclick={reset}
 				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-					/>
-				</svg>
+					最初に戻る
+				</button>
 			</div>
-			<div>
-				<h3 class="text-xl font-bold text-gray-800">エラーが発生しました</h3>
-				<p class="mt-2 text-gray-500">{error}</p>
-			</div>
-			<button
-				class="rounded-full bg-gray-200 px-6 py-2 font-bold text-gray-700 hover:bg-gray-300"
-				onclick={reset}
-			>
-				最初に戻る
-			</button>
-		</div>
-	{/if}
-</div>
+		{/if}
+	</div>
+</section>
