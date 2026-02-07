@@ -4,13 +4,16 @@
 SvelteKit フロントエンドを Firebase Hosting にデプロイする。静的サイト生成（SSG）で出力し、SPAとして配信する。
 
 ## Tasks
-- [ ] Firebase プロジェクトに Hosting を設定（firebase init hosting）
-- [ ] 環境変数を設定（API_URL を本番の Cloud Run URL に）
-- [ ] ビルド設定の確認（pnpm build）
-- [ ] firebase.json の設定（rewrites, headers など）
-- [ ] デプロイ（firebase deploy --only hosting）
+- [x] Firebase プロジェクトに Hosting を設定（firebase init hosting 相当の設定ファイルを手動作成）
+- [x] 環境変数を設定（API_URL を本番の Cloud Run URL に）
+- [x] ビルド設定の確認（pnpm build OK）
+- [x] firebase.json の設定（rewrites, headers など）
+- [x] デプロイ（firebase deploy --only hosting OK）
 - [ ] カスタムドメイン設定（オプション）
-- [ ] 動作確認
+- [x] 動作確認
+
+### デプロイ済みURL
+**Hosting URL**: https://enikki-cloud.web.app
 
 ## Notes
 ### セットアップコマンド
