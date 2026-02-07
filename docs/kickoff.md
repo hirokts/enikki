@@ -442,3 +442,4 @@ Would you like me to **provide a minimal React example for the Multimodal Live A
 - Firestore から日記データを読み込んで表示する画面の作成とパスパラメータによるルーティング
 - Discordへの通知
 - Cloud Runを設定し、APIをdeploy
+- Firebase Hostingにフロントエンドをデプロイ
