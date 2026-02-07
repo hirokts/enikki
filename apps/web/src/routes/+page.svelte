@@ -3,12 +3,20 @@
 	import DiaryCard from '$lib/components/DiaryCard.svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { onMount, onDestroy } from 'svelte';
-	import { checkApiKeyStatus } from '$lib/api';
-	import { doc, onSnapshot } from 'firebase/firestore';
-	import { db } from '$lib/firebase';
+	import { checkApiKeyStatus, getVertexAIToken } from '$lib/api';
+	import { doc, onSnapshot, setLogLevel, type Firestore } from 'firebase/firestore';
+	import { initializeFirebase } from '$lib/firebase';
 
-	onMount(() => {
-		checkApiKeyStatus();
+	let db: Firestore | null = null;
+
+	onMount(async () => {
+		const result = await checkApiKeyStatus();
+		if (result) {
+			// Initialize Firebase with project ID from backend
+			const token = await getVertexAIToken();
+			db = initializeFirebase(token.projectId);
+			setLogLevel('debug');
+		}
 	});
 
 	let diaryId: string | null = $state(null);
@@ -18,12 +26,20 @@
 	let unsubscribe: (() => void) | null = null;
 
 	function handleComplete(data: { diaryId: string }) {
+		if (!db) {
+			console.error('Firebase not initialized');
+			error = 'Firebase が初期化されていません';
+			diaryStatus = 'failed';
+			return;
+		}
+
 		diaryId = data.diaryId;
 		diaryStatus = 'pending';
+		console.log('Start watching diary:', diaryId);
 
-		unsubscribe = onSnapshot(doc(db, 'diaries', diaryId), (doc) => {
-			if (doc.exists()) {
-				const data = doc.data();
+		unsubscribe = onSnapshot(doc(db, 'diaries', diaryId), (docSnapshot) => {
+			if (docSnapshot.exists()) {
+				const data = docSnapshot.data();
 				diaryStatus = data.status;
 				console.log('Diary status updated:', diaryStatus);
 
@@ -108,6 +124,7 @@
 					{/if}
 				</h3>
 				<p class="mt-2 text-gray-500">少し時間がかかります。そのままお待ちください。</p>
+				<p class="mt-4 text-xs font-mono text-gray-400">ID: {diaryId}</p>
 			</div>
 		</div>
 	{:else if diaryStatus === 'completed' && generatedDiary}
