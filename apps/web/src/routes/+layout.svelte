@@ -17,8 +17,8 @@
 
 <div class="flex min-h-screen flex-col bg-background font-sans text-foreground">
 	<header
-		class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 {isScrolled
-			? 'bg-card/95 backdrop-blur-sm shadow-md'
+		class="fixed top-0 right-0 left-0 z-50 transition-all duration-300 {isScrolled
+			? 'bg-card/95 shadow-md backdrop-blur-sm'
 			: 'bg-transparent'}"
 	>
 		<nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">

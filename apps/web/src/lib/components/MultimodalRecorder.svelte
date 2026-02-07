@@ -122,11 +122,11 @@
 	function endConversation() {
 		stop();
 		// TODO: 会話ログから絵日記を生成（後続issue）
-         // For now, we don't have a diary ID in this stub implementation
+		// For now, we don't have a diary ID in this stub implementation
 		// oncomplete({
 		// 	diaryId: 'stub-id'
 		// });
-        alert("会話が短すぎます。もう少しお話ししてください。");
+		alert('会話が短すぎます。もう少しお話ししてください。');
 	}
 
 	function stop() {
@@ -157,7 +157,9 @@
 			<span class="text-lg">🎤</span> 「こんにちは」と話しかけてみてください
 		</p>
 	{:else if status === 'error'}
-		<div class="rounded-lg bg-destructive/20 px-4 py-2 text-destructive">エラーが発生しました。コンソールを確認してください。</div>
+		<div class="rounded-lg bg-destructive/20 px-4 py-2 text-destructive">
+			エラーが発生しました。コンソールを確認してください。
+		</div>
 	{/if}
 
 	<div class="flex gap-4">
@@ -179,6 +181,8 @@
 	</div>
 
 	{#if status !== 'idle'}
-		<button class="mt-4 text-xs text-muted-foreground underline" onclick={stop}> 強制終了 (Debug) </button>
+		<button class="mt-4 text-xs text-muted-foreground underline" onclick={stop}>
+			強制終了 (Debug)
+		</button>
 	{/if}
 </div>
