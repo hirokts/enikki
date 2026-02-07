@@ -5,7 +5,7 @@
 	import { LiveClient } from '$lib/live-client';
 	import { getVertexAIToken, createDiary } from '$lib/api';
 
-	let { oncomplete }: { oncomplete: (data: { imageSrc: string; text: string }) => void } = $props();
+	let { oncomplete }: { oncomplete: (data: { diaryId: string }) => void } = $props();
 
 	let status: 'idle' | 'connecting' | 'connected' | 'listening' | 'speaking' | 'error' =
 		$state('idle');
@@ -83,9 +83,7 @@
 							console.log('Diary created:', response);
 							// Complete the conversation with structured data
 							oncomplete({
-								imageSrc:
-									'https://images.unsplash.com/photo-1516934024742-b461fba47600?w=800&auto=format&fit=crop&q=60', // Placeholder for now
-								text: args.summary || JSON.stringify(args, null, 2)
+								diaryId: response.id
 							});
 						})
 						.catch((err) => {
@@ -122,11 +120,11 @@
 	function endConversation() {
 		stop();
 		// TODO: 会話ログから絵日記を生成（後続issue）
-		oncomplete({
-			imageSrc:
-				'https://images.unsplash.com/photo-1516934024742-b461fba47600?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fHN1bW1lciUyMHZpYmV8ZW58MHx8MHx8fDA%3D',
-			text: '今日はGeminiと楽しくおしゃべりしました！'
-		});
+         // For now, we don't have a diary ID in this stub implementation
+		// oncomplete({
+		// 	diaryId: 'stub-id'
+		// });
+        alert("会話が短すぎます。もう少しお話ししてください。");
 	}
 
 	function stop() {
