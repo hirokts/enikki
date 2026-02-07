@@ -437,3 +437,9 @@ Would you like me to **provide a minimal React example for the Multimodal Live A
 #### 2026-02-04
 - Image生成をGemini 2.5 Flash Image(Nano Banana)に変更
 - APIの処理をバックグラウンドタスク化
+
+#### 2026-02-07
+- Firestore から日記データを読み込んで表示する画面の作成とパスパラメータによるルーティング
+- Discordへの通知
+- Cloud Runを設定し、APIをdeploy
+- Firebase Hostingにフロントエンドをデプロイ

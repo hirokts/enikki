@@ -121,3 +121,23 @@ curl https://enikki-api-xxxxx-an.a.run.app/health
 | `ALLOWED_ORIGINS` | CORS許可オリジン（カンマ区切り） | 低 |
 | `API_KEY` | API認証キー | **高** |
 | `DISCORD_WEBHOOK_URL` | Discord Webhook URL | **高** |
+
+### 7. トラブルシューティング
+- **バックグラウンド処理が完了しない**:
+    - `BackgroundTasks` を使う場合、レスポンス返却後にCPUがスロットリングされると処理が止まる。
+    - 解決策: `--no-cpu-throttling` フラグを有効にする。
+    ```bash
+    gcloud run services update enikki-api --region asia-northeast1 --no-cpu-throttling
+    ```
+- **環境変数のカンマ**:
+    - `ALLOWED_ORIGINS` などでカンマを含む場合、通常の環境変数設定だとエラーになる。
+    - 解決策: カスタムデリミタ `^@^` を使用する。
+    ```bash
+    gcloud run services update enikki-api --region asia-northeast1 --update-env-vars "^@^ALLOWED_ORIGINS=https://a.com,https://b.com"
+    ```
+- **Gemini APIのエラー**:
+    - `asia-northeast1` の Cloud Run から `asia-northeast1` の Vertex AI を呼ぶとモデルが見つからない場合がある。
+    - 解決策: Gemini 2.0 Flash などは `us-central1` が推奨されるため、`GCP_REGION` 環境変数を `us-central1` に設定する。
+    ```bash
+    gcloud run services update enikki-api --region asia-northeast1 --update-env-vars GCP_REGION=us-central1
+    ```
