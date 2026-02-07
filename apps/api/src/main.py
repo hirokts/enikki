@@ -12,11 +12,9 @@ from src.models import ConversationLogRequest, DiaryResponse
 
 app = FastAPI()
 
-# CORS設定
-origins = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-]
+# CORS設定（環境変数から許可オリジンを取得）
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000")
+origins = [origin.strip() for origin in allowed_origins.split(",")]
 
 app.add_middleware(
     CORSMiddleware,
