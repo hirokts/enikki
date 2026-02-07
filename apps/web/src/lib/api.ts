@@ -49,11 +49,10 @@ export async function getVertexAIToken(): Promise<{
  */
 export async function createDiary(log: {
 	date: string;
-	activity: string;
-	feeling: string;
-	summary: string;
+	conversation_transcript: string; // 会話の全文（JSON形式）
+	activity?: string;
+	feeling?: string;
 	location?: string;
-	joke_hint?: string;
 }): Promise<{ id: string; status: string }> {
 	const response = await fetchWithAuth('/diaries', {
 		method: 'POST',

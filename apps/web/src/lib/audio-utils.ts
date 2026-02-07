@@ -5,35 +5,43 @@ export class AudioRecorder extends EventTarget {
 	private stream: MediaStream | null = null;
 	private audioContext: AudioContext | null = null;
 	private source: MediaStreamAudioSourceNode | null = null;
-	private processor: ScriptProcessorNode | null = null;
+	private workletNode: AudioWorkletNode | null = null;
 
 	async start() {
 		this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 		this.audioContext = new AudioContext({ sampleRate: 16000 });
-		this.source = this.audioContext.createMediaStreamSource(this.stream);
 
-		this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
+		try {
+			// AudioWorklet モジュールの読み込み
+			// static/audio-processor.js に配置されたファイルを読み込む
+			await this.audioContext.audioWorklet.addModule('/audio-processor.js');
 
-		this.processor.onaudioprocess = (e) => {
-			const inputData = e.inputBuffer.getChannelData(0);
-			const pcm16 = float32ToPcm16(inputData);
-			const base64 = arrayBufferToBase64(pcm16);
-			this.dispatchEvent(new CustomEvent('data', { detail: base64 }));
-		};
+			this.source = this.audioContext.createMediaStreamSource(this.stream);
+			this.workletNode = new AudioWorkletNode(this.audioContext, 'audio-processor');
 
-		this.source.connect(this.processor);
-		this.processor.connect(this.audioContext.destination);
+			this.workletNode.port.onmessage = (event) => {
+				// AudioProcessor から受信したデータ（PCM16 ArrayBuffer）を Base64 に変換
+				const base64 = arrayBufferToBase64(event.data);
+				this.dispatchEvent(new CustomEvent('data', { detail: base64 }));
+			};
+
+			this.source.connect(this.workletNode);
+			this.workletNode.connect(this.audioContext.destination);
+		} catch (error) {
+			console.error('Errors loading audio processor:', error);
+			throw error;
+		}
 	}
 
 	stop() {
-		this.processor?.disconnect();
+		this.workletNode?.disconnect();
 		this.source?.disconnect();
 		this.audioContext?.close();
 		this.stream?.getTracks().forEach((track) => track.stop());
 		this.stream = null;
 		this.audioContext = null;
 		this.source = null;
-		this.processor = null;
+		this.workletNode = null;
 	}
 }
 
@@ -78,17 +86,6 @@ export class AudioPlayer {
 }
 
 // --- Utilities ---
-
-function float32ToPcm16(float32Arr: Float32Array): ArrayBuffer {
-	const buffer = new ArrayBuffer(float32Arr.length * 2);
-	const view = new DataView(buffer);
-	for (let i = 0; i < float32Arr.length; i++) {
-		let s = Math.max(-1, Math.min(1, float32Arr[i]));
-		s = s < 0 ? s * 0x8000 : s * 0x7fff;
-		view.setInt16(i * 2, s, true);
-	}
-	return buffer;
-}
 
 function pcm16ToFloat32(arrayBuffer: ArrayBuffer): Float32Array {
 	const view = new DataView(arrayBuffer);

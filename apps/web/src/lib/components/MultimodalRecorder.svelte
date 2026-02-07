@@ -11,12 +11,31 @@
 		$state('idle');
 	let isFirstListening = $state(true);
 
+	// 会話履歴を蓄積
+	type ConversationEntry = {
+		role: 'user' | 'ai';
+		text: string;
+		timestamp: string;
+	};
+	let conversationHistory: ConversationEntry[] = $state([]);
+	let currentAiText = $state(''); // AIの応答テキストを一時的に蓄積
+	let turnCount = $state(0); // ユーザー発話のターン数
+
+	// 最低ターン数と終了ボタンの有効化
+	const MIN_TURNS = 3;
+	let canEndConversation = $derived(turnCount >= MIN_TURNS);
+
 	let client: LiveClient | null = null;
 	let recorder: AudioRecorder | null = null;
 	let player: AudioPlayer | null = null;
 
 	async function startConversation() {
 		status = 'connecting';
+		// 会話履歴をリセット
+		conversationHistory = [];
+		currentAiText = '';
+		turnCount = 0;
+
 		try {
 			// 1. Get Access Token from backend
 			const token = await getVertexAIToken();
@@ -49,8 +68,29 @@
 				player?.play(e.detail);
 			}) as EventListener);
 
+			// テキストイベント: AIの応答テキストを蓄積
+			client.addEventListener('text', ((e: CustomEvent) => {
+				currentAiText += e.detail;
+			}) as EventListener);
+
 			client.addEventListener('turnComplete', () => {
+				// AIのターンが完了したら、蓄積したテキストを会話履歴に追加
+				if (currentAiText.trim()) {
+					conversationHistory = [
+						...conversationHistory,
+						{
+							role: 'ai',
+							text: currentAiText.trim(),
+							timestamp: new Date().toISOString()
+						}
+					];
+					console.log('AI response added to history:', currentAiText.trim().substring(0, 50) + '...');
+					currentAiText = '';
+				}
 				status = 'listening';
+				// リスニング開始 = ユーザーのターン開始
+				turnCount++;
+				console.log(`Turn count: ${turnCount}`);
 			});
 
 			client.addEventListener('close', () => {
@@ -72,15 +112,15 @@
 					// args are already an object
 					const args = functionCall.args;
 
+					// 会話履歴をJSON文字列に変換
+					const transcriptJson = JSON.stringify(conversationHistory);
+					console.log('Conversation transcript:', transcriptJson);
+
 					// Send log to backend
-					createDiary({
-						date: args.date || new Date().toISOString().split('T')[0],
-						location: args.location,
-						activity: args.activity,
-						feeling: args.feeling,
-						summary: args.summary,
-						joke_hint: args.joke_hint
-					})
+						createDiary({
+							date: args.date || new Date().toISOString().split('T')[0],
+							conversation_transcript: transcriptJson
+						})
 						.then((response) => {
 							console.log('Diary created:', response);
 							// Complete the conversation with structured data
@@ -120,13 +160,29 @@
 	}
 
 	function endConversation() {
+		if (!canEndConversation) {
+			alert(`まだ会話が短いです。もう少しお話ししてください（現在: ${turnCount}ターン、最低: ${MIN_TURNS}ターン）`);
+			return;
+		}
 		stop();
-		// TODO: 会話ログから絵日記を生成（後続issue）
-		// For now, we don't have a diary ID in this stub implementation
-		// oncomplete({
-		// 	diaryId: 'stub-id'
-		// });
-		alert('会話が短すぎます。もう少しお話ししてください。');
+		// 手動終了の場合、会話ログのみで日記を作成
+		const transcriptJson = JSON.stringify(conversationHistory);
+		console.log('Manual end - Conversation transcript:', transcriptJson);
+
+		createDiary({
+			date: new Date().toISOString().split('T')[0],
+			conversation_transcript: transcriptJson
+		})
+			.then((response) => {
+				console.log('Diary created:', response);
+				oncomplete({
+					diaryId: response.id
+				});
+			})
+			.catch((err) => {
+				console.error('Failed to create diary:', err);
+				alert('日記の保存に失敗しました。');
+			});
 	}
 
 	function stop() {
@@ -172,8 +228,11 @@
 			</button>
 		{:else}
 			<button
-				class="rounded-full border-2 border-border bg-card px-8 py-4 text-lg font-bold text-foreground transition-all duration-200 hover:bg-muted"
+				class="rounded-full border-2 px-8 py-4 text-lg font-bold transition-all duration-200 {canEndConversation
+					? 'border-border bg-card text-foreground hover:bg-muted'
+					: 'cursor-not-allowed border-muted bg-muted/50 text-muted-foreground'}"
 				onclick={endConversation}
+				disabled={!canEndConversation}
 			>
 				日記にする
 			</button>

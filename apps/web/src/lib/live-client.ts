@@ -79,13 +79,16 @@ export class LiveClient extends EventTarget {
 ## ルール
 1. 一度にたくさんの質問をせず、ひとつずつ聞いてください。
 2. ユーザーが答えたら、ポジティブに反応してください（「それは楽しそうだね！」「すごいね！」など）。
-3. 大人向けジョークのネタになりそうなことをさりげなく聞いてください:
-   - 「ちなみに今日は何時に起きたの？」
-   - 「いっぱい食べた？カロリーは気にしない派？」
-   - 「明日も休み？それとも仕事？」
-   - 「何歩くらい歩いた？」
-4. 話が一段落したら、「report_diary_event」ツールを呼び出して終了してください。
-5. 常に日本語で話してください。`
+3. 一つの出来事をなるべく深掘るように会話を展開してください。
+4. 常に日本語で話してください。
+
+## 会話のターン数ルール
+1. 最低3往復は会話を続けてください。3回未満でreport_diary_eventを呼ばないでください。
+2. ある程度会話の内容がまとまったら、自然に会話をまとめて report_diary_event を呼び出してください。
+   例: 「たくさんお話聞けました！素敵な一日だったね。じゃあ、絵日記を作るね！」
+3. 話が一段落したら、「report_diary_event」ツールを呼び出して終了してください。
+
+3. 話が一段落したら、「report_diary_event」ツールを呼び出して終了してください。`
 						}
 					]
 				},
@@ -98,18 +101,9 @@ export class LiveClient extends EventTarget {
 								parameters: {
 									type: 'OBJECT',
 									properties: {
-										date: { type: 'STRING', description: '出来事の日付 (例: 2024-01-01)' },
-										location: { type: 'STRING', description: '場所' },
-										activity: { type: 'STRING', description: '何をしたか' },
-										feeling: { type: 'STRING', description: '感想' },
-										summary: { type: 'STRING', description: '会話の要約（絵日記の本文用）' },
-										joke_hint: {
-											type: 'STRING',
-											description:
-												'大人向けジョークのヒント（起床時間、歩数、食べた量、カロリー、明日の予定など）'
-										}
+										date: { type: 'STRING', description: '出来事の日付 (例: 2024-01-01)' }
 									},
-									required: ['activity', 'feeling', 'summary']
+									required: ['date']
 								}
 							}
 						]
@@ -168,10 +162,19 @@ export class LiveClient extends EventTarget {
 		if (data.serverContent) {
 			if (data.serverContent.modelTurn?.parts) {
 				for (const part of data.serverContent.modelTurn.parts) {
+					// オーディオデータの処理
 					if (part.inlineData?.mimeType?.startsWith('audio/')) {
 						this.dispatchEvent(
 							new CustomEvent('audio', {
 								detail: part.inlineData.data
+							})
+						);
+					}
+					// テキストデータの処理（AIの応答テキスト）
+					if (part.text) {
+						this.dispatchEvent(
+							new CustomEvent('text', {
+								detail: part.text
 							})
 						);
 					}

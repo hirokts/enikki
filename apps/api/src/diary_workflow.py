@@ -5,7 +5,7 @@
 1. キーワード抽出 (Gemini)
 2. 日記文章生成 (Gemini)
 3. 品質チェック (Gemini) -> NG なら 2 に戻る
-4. 画像生成 (Imagen 3)
+4. 画像生成
 5. Firestore 保存
 """
 
@@ -48,16 +48,19 @@ class DiaryState(TypedDict):
 def extract_keywords(state: DiaryState) -> dict:
     """会話ログから4つのキーワードを抽出"""
     log = state["conversation_log"]
+    transcript = log.get("conversation_transcript", "")
 
     prompt = f"""以下の会話ログから、絵日記に使う重要な4つのキーワードを抽出してください。
 キーワードは名詞や動詞など、絵に描きやすいものを選んでください。
 
-会話ログ:
+## 基本情報
 - 日付: {log.get("date", "不明")}
 - 場所: {log.get("location", "不明")}
 - 活動: {log.get("activity", "不明")}
 - 感想: {log.get("feeling", "不明")}
-- 要約: {log.get("summary", "")}
+
+## 会話の全文
+{transcript}
 
 JSON形式で出力してください（キーワードの配列のみ）:
 ["キーワード1", "キーワード2", "キーワード3", "キーワード4"]
@@ -72,14 +75,16 @@ JSON形式で出力してください（キーワードの配列のみ）:
         elif "```" in content:
             content = content.split("```")[1].split("```")[0].strip()
         keywords = json.loads(content)
+        # Noneを除外し、文字列化
+        keywords = [str(k) for k in keywords if k]
         return {"keywords": keywords[:4], "status": "processing"}
     except Exception as e:
         print(f"Error extracting keywords: {e}")
         # フォールバック
         keywords = [
-            log.get("activity", ""),
-            log.get("feeling", ""),
-            log.get("location", "場所"),
+            log.get("activity") or "活動",
+            log.get("feeling") or "感想",
+            log.get("location") or "場所",
             "今日",
         ]
         return {"keywords": keywords, "status": "processing"}
@@ -87,9 +92,9 @@ JSON形式で出力してください（キーワードの配列のみ）:
 
 def generate_diary(state: DiaryState) -> dict:
     """キーワードを元に絵日記テキストを生成"""
-    keywords = state.get("keywords", [])
+    keywords = state.get("keywords") or []
     log = state["conversation_log"]
-    joke_hint = log.get("joke_hint", "")
+    transcript = log.get("conversation_transcript", "")
 
     prompt = f"""以下の情報を元に、小学生が書くような「ぼくの夏休み」風の絵日記テキストを生成してください。
 ただし、実際の読者は大人なので、大人がクスッと笑える要素を入れてください。
@@ -98,7 +103,9 @@ def generate_diary(state: DiaryState) -> dict:
 場所: {log.get("location", "")}
 活動: {log.get("activity", "")}
 感想: {log.get("feeling", "")}
-ジョークのヒント: {joke_hint if joke_hint else "なし（自由に考えてください）"}
+
+## 会話の全文（参考）
+{transcript}
 
 ## ルール
 - 100〜150文字程度
@@ -214,7 +221,7 @@ def generate_image(state: DiaryState) -> dict:
     from google.genai import types
 
     diary_text = state.get("diary_text", "")
-    keywords = state.get("keywords", [])
+    keywords = state.get("keywords") or []
     document_id = state.get("document_id", "unknown")
     log = state["conversation_log"]
 
@@ -250,13 +257,19 @@ Output format (JSON):
         scene_desc = "a happy day at home"
         elements = "warm atmosphere, family"
 
-    # 画像生成プロンプト（英語に翻訳済み）
-    prompt = f"""A picture diary illustration in a warm, hand-drawn style.
-Scene: {scene_desc}
+    # 画像生成プロンプト（2歳児がクレヨンで描いた絵風）
+    prompt = f"""Create an image that looks like it was drawn by a 5-year-old child with crayons.
+Theme: {scene_desc}
 Key elements: {elements}
-Style: Colorful, cheerful, simple shapes, crayon-like texture, picture diary style.
 
-Important: Bright colors, simple and cute illustration style."""
+Style requirements:
+- Very simple, childlike shapes (circles, scribbles, stick figures)
+- Bright crayon colors with visible texture
+- Uneven lines and wobbly shapes
+- Naive, primitive artistic style
+- Paper texture background
+
+IMPORTANT: Do NOT include any text, letters, numbers, or written words in the image."""
 
     try:
         # Gemini 2.5 Flash Image クライアント作成

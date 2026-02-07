@@ -172,14 +172,18 @@ def create_diary(
         update_time, doc_ref = db.collection("diaries").add(doc_data)
         document_id = doc_ref.id
 
+        if request.conversation_transcript:
+            print(f"Received conversation transcript: {request.conversation_transcript}")
+        else:
+            print("No conversation transcript received.")
+
         # 会話ログを構築
         conversation_log = {
             "date": request.date,
             "location": request.location,
             "activity": request.activity,
             "feeling": request.feeling,
-            "summary": request.summary,
-            "joke_hint": request.joke_hint,
+            "conversation_transcript": request.conversation_transcript,
         }
 
         # バックグラウンドでワークフローを実行
