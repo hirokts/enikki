@@ -21,24 +21,24 @@
 
 ### Phase 1: デザインシステムの導入
 
-- [ ] Google Fonts の設定（Zen Maru Gothic, DotGothic16）
-- [ ] `app.css` にカラー変数を追加（oklch形式）
+- [x] Google Fonts の設定（Zen Maru Gothic, DotGothic16）
+- [x] `app.css` にカラー変数を追加（oklch形式）
   - Primary: `oklch(0.45 0.12 30)` - 深い茶色/赤褐色
   - Accent: `oklch(0.75 0.15 55)` - 暖かいオレンジ/アンバー
   - Background: `oklch(0.97 0.01 85)` - 温かみのあるオフホワイト
   - その他 muted, border, card 等
-- [ ] アニメーション定義の追加（snow animation 等）
+- [x] アニメーション定義の追加（snow animation 等）
 
 ### Phase 2: レイアウト・ナビゲーションの刷新
 
-- [ ] `+layout.svelte` をリニューアル
+- [x] `+layout.svelte` をリニューアル
   - ロゴの「絵」部分をアクセントカラーで強調
   - スクロールに応じて背景が変化するヘッダー
   - フッターのスタイル更新
 
 ### Phase 3: メインページのデザイン適用
 
-- [ ] `+page.svelte` にヒーロースタイルを適用
+- [x] `+page.svelte` にヒーロースタイルを適用
   - 背景画像（`static/images/winter-hero.jpg`）
   - グラデーションオーバーレイ
   - Snowアニメーション
@@ -47,18 +47,19 @@
 
 ### Phase 4: 既存コンポーネントのスタイル更新
 
-- [ ] `MultimodalRecorder.svelte` のスタイル更新
+- [x] `MultimodalRecorder.svelte` のスタイル更新
   - 新しいカラーパレットに合わせる
   - ボタンのスタイル調整
-- [ ] `DiaryCard.svelte` のスタイル更新
+  - 初回あいさつガイドメッセージ追加
+- [x] `DiaryCard.svelte` のスタイル更新
   - カード背景、ボーダーを新デザインに
-- [ ] 生成中・エラー画面のスタイル更新
+- [x] 生成中・エラー画面のスタイル更新
 
 ### Phase 5: 仕上げ・動作確認
 
-- [ ] レスポンシブ対応の確認（モバイル/タブレット/デスクトップ）
-- [ ] アニメーションのパフォーマンス確認
-- [ ] クロスブラウザ動作確認
+- [x] レスポンシブ対応の確認（モバイル/タブレット/デスクトップ）
+- [x] アニメーションのパフォーマンス確認
+- [x] Svelte 5 対応（`<slot>` → `{@render children()}`）
 
 ## Notes
 

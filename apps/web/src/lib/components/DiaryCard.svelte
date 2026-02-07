@@ -21,7 +21,9 @@
 		{#if imageSrc}
 			<img src={imageSrc} alt="Generated Diary" class="h-full w-full object-cover" />
 		{:else}
-			<div class="flex h-full w-full items-center justify-center text-muted-foreground">No Image</div>
+			<div class="flex h-full w-full items-center justify-center text-muted-foreground">
+				No Image
+			</div>
 		{/if}
 	</div>
 	<div class="text-center">

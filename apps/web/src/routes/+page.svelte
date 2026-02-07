@@ -47,28 +47,32 @@
 		diaryStatus = 'pending';
 		console.log('Start watching diary:', diaryId);
 
-		unsubscribe = onSnapshot(doc(db, 'diaries', diaryId), (docSnapshot) => {
-			if (docSnapshot.exists()) {
-				const data = docSnapshot.data();
-				diaryStatus = data.status;
-				console.log('Diary status updated:', diaryStatus);
+		unsubscribe = onSnapshot(
+			doc(db, 'diaries', diaryId),
+			(docSnapshot) => {
+				if (docSnapshot.exists()) {
+					const data = docSnapshot.data();
+					diaryStatus = data.status;
+					console.log('Diary status updated:', diaryStatus);
 
-				if (data.status === 'completed') {
-					generatedDiary = {
-						imageSrc: data.imageUrl,
-						text: data.diaryText
-					};
-				} else if (data.status === 'failed') {
-					error = data.error || '生成に失敗しました';
+					if (data.status === 'completed') {
+						generatedDiary = {
+							imageSrc: data.imageUrl,
+							text: data.diaryText
+						};
+					} else if (data.status === 'failed') {
+						error = data.error || '生成に失敗しました';
+					}
+				} else {
+					console.log('Document does not exist yet');
 				}
-			} else {
-				console.log('Document does not exist yet');
+			},
+			(err) => {
+				console.error('Firestore subscription error:', err);
+				diaryStatus = 'failed';
+				error = err.message;
 			}
-		}, (err) => {
-			console.error("Firestore subscription error:", err);
-			diaryStatus = 'failed';
-			error = err.message;
-		});
+		);
 	}
 
 	function reset() {
@@ -93,13 +97,11 @@
 <section class="relative min-h-screen overflow-hidden">
 	<!-- Background Image -->
 	<div class="absolute inset-0">
-		<img
-			src="/images/winter-hero.jpg"
-			alt="冬の風景"
-			class="h-full w-full object-cover"
-		/>
+		<img src="/images/winter-hero.jpg" alt="冬の風景" class="h-full w-full object-cover" />
 		<!-- Overlay for better readability -->
-		<div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/90"></div>
+		<div
+			class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/90"
+		></div>
 	</div>
 
 	<!-- Snow Animation -->
@@ -135,7 +137,7 @@
 						</h1>
 
 						<!-- English subtitle -->
-						<p class="mt-4 text-xs uppercase tracking-[0.5em] text-muted-foreground md:text-sm">
+						<p class="mt-4 text-xs tracking-[0.5em] text-muted-foreground uppercase md:text-sm">
 							My Picture Diary
 						</p>
 					</div>
@@ -147,7 +149,9 @@
 						? 'translate-y-0 opacity-100'
 						: 'translate-y-10 opacity-0'}"
 				>
-					<p class="rounded-full bg-card/80 px-6 py-3 text-sm text-card-foreground/90 backdrop-blur-sm md:text-base">
+					<p
+						class="rounded-full bg-card/80 px-6 py-3 text-sm text-card-foreground/90 backdrop-blur-sm md:text-base"
+					>
 						AIとお話しするだけで、素敵な思い出を記録します
 					</p>
 				</div>
@@ -163,10 +167,15 @@
 			</div>
 		{:else if diaryStatus === 'pending' || diaryStatus === 'processing'}
 			<!-- 生成中画面 -->
-			<div class="flex flex-col items-center gap-6 rounded-2xl bg-card/95 p-12 shadow-2xl backdrop-blur-sm" in:fade>
+			<div
+				class="flex flex-col items-center gap-6 rounded-2xl bg-card/95 p-12 shadow-2xl backdrop-blur-sm"
+				in:fade
+			>
 				<div class="relative flex h-32 w-32 items-center justify-center">
 					<div class="absolute inset-0 animate-ping rounded-full bg-accent/30 opacity-75"></div>
-					<div class="relative flex h-24 w-24 items-center justify-center rounded-full bg-accent/20">
+					<div
+						class="relative flex h-24 w-24 items-center justify-center rounded-full bg-accent/20"
+					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							class="h-12 w-12 animate-bounce text-accent"
@@ -208,8 +217,13 @@
 			</div>
 		{:else if diaryStatus === 'failed'}
 			<!-- エラー画面 -->
-			<div class="flex flex-col items-center gap-6 rounded-2xl bg-card/95 p-12 text-center shadow-2xl backdrop-blur-sm" in:fade>
-				<div class="flex h-24 w-24 items-center justify-center rounded-full bg-destructive/20 text-destructive">
+			<div
+				class="flex flex-col items-center gap-6 rounded-2xl bg-card/95 p-12 text-center shadow-2xl backdrop-blur-sm"
+				in:fade
+			>
+				<div
+					class="flex h-24 w-24 items-center justify-center rounded-full bg-destructive/20 text-destructive"
+				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						class="h-12 w-12"

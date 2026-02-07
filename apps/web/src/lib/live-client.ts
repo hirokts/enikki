@@ -19,7 +19,7 @@ export class LiveClient extends EventTarget {
 	}
 
 	connect() {
-		const { projectId, region, accessToken } = this.config;
+		const { region, accessToken } = this.config;
 
 		// Vertex AI WebSocket URL with access token as query parameter
 		// Browser WebSocket API cannot set Authorization headers
