@@ -274,9 +274,6 @@ MVPの条件
             - Aを描画する
             - Bを元に絵日記を生成して描画
 
-![y_62b01eb6187a5](https://hackmd.io/_uploads/BkHbGKsHZe.jpg)
-
-
 # 🏗️ 全体システム構成図
 ## 1. フロントエンド（公開・閲覧場所）
 - 技術: SvelteKit
