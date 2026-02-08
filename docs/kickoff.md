@@ -443,3 +443,6 @@ Would you like me to **provide a minimal React example for the Multimodal Live A
 - Discordへの通知
 - Cloud Runを設定し、APIをdeploy
 - Firebase Hostingにフロントエンドをデプロイ
+
+#### 2026-02-08
+- deploymentのドキュメント作成

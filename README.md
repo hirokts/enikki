@@ -39,48 +39,18 @@ AIがあなたの1日をインタビューし、素敵な絵日記を生成す�
 
 ## 🚀 デプロイ手順 (Google Cloud)
 
-### ⚙️ バックエンド (Cloud Run)
+詳細なセットアップ手順、環境変数の設定、トラブルシューティングについては、以下のドキュメントを参照してください。
 
-1. **Artifact Registry リポジトリの作成** (初回のみ)
-   ```bash
-   gcloud artifacts repositories create enikki --repository-format=docker --location=asia-northeast1
-   ```
+👉 **[デプロイメントガイド (docs/deployment.md)](docs/deployment.md)**
 
-2. **Cloud Run へのデプロイ**
-   `apps/api` ディレクトリで以下のコマンドを実行します。
-   ```bash
-   gcloud run deploy enikki-api \
-     --source . \
-     --region asia-northeast1 \
-     --allow-unauthenticated \
-     --set-env-vars "\
-   GCP_PROJECT_ID=your-project-id,\
-   GCP_REGION=us-central1,\
-   GCS_BUCKET_NAME=your-bucket-name,\
-   FRONTEND_URL=https://your-frontend.web.app,\
-   ALLOWED_ORIGINS=https://your-frontend.web.app,\
-   API_KEY=your-api-key,\
-   DISCORD_WEBHOOK_URL=your-webhook-url"
-   ```
+### クイックコマンド (更新用)
 
-3. **サービスアカウントへの権限付与**
-   Cloud Run のサービスアカウント（デフォルトは `{プロジェクト番号}-compute@developer.gserviceaccount.com`）に以下のロールを付与する必要があります。
-   - `roles/datastore.user` (Firestore 用)
-   - `roles/storage.objectAdmin` (Cloud Storage 用)
-   - `roles/aiplatform.user` (Vertex AI 用)
+**Frontend (Firebase Hosting)**
+```bash
+cd apps/web && pnpm build && firebase deploy --only hosting
+```
 
-### 🌐 フロントエンド (Firebase Hosting)
-
-1. **環境変数の設定**
-   `apps/web/.env` に Cloud Run の URL を設定します。
-   ```
-   VITE_API_URL=https://enikki-api-xxxxx-an.a.run.app
-   ```
-
-2. **ビルドとデプロイ**
-   ```bash
-   cd apps/web
-   pnpm install
-   pnpm build
-   firebase deploy --only hosting
-   ```
+**Backend (Cloud Run)**
+```bash
+cd apps/api && gcloud run deploy enikki-api --source . --region asia-northeast1 --allow-unauthenticated
+```
