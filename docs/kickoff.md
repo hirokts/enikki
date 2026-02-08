@@ -310,7 +310,7 @@ https://antigravity.google/
 - Multimodal Live API を使って、マイク入力をリアルタイムで Gemini に送信。
 - AIの「声」をスピーカーから再生。
 
-### Backend (Cloud Run):
+### Backend (Cloud Run): FastAPI
 
 - 役割1 (Auth): フロントエンドが Gemini と安全に通信するための「入室許可証（トークン）」を発行。
 - 役割2 (Summary): 会話が盛り上がって終了したら、会話のログ（履歴）を読み取って、最終的な**「絵日記用のJSON」**を生成し、Firestoreに保存する。
