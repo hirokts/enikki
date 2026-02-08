@@ -8,3 +8,6 @@ docs/trash/*
 secrets/
 
 .DS_Store
+
+# Python
+__pycache__/
