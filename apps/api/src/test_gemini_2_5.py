@@ -7,7 +7,7 @@ import os
 from google import genai
 from google.genai import types
 
-PROJECT_ID = os.getenv("GCP_PROJECT_ID", "enikki-cloud")
+PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT", "enikki-cloud")
 REGION = "us-central1"  # 新しいモデルは us-central1 で利用可能なことが多い
 
 print(f"Creating client for project={PROJECT_ID}, location={REGION}")

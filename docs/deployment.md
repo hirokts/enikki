@@ -63,7 +63,7 @@ Enikki (絵日記) アプリケーションのデプロイ環境構築、更新�
      --source . \
      --region asia-northeast1 \
      --allow-unauthenticated \
-     --set-env-vars "GCP_PROJECT_ID=your-project-id,GCP_REGION=us-central1,..."
+     --set-env-vars "GOOGLE_CLOUD_PROJECT=your-project-id,GCP_REGION=us-central1,..."
    ```
    ※ `GCP_REGION` は Gemini API の制限により `us-central1` を推奨。
    ※ `ALLOWED_ORIGINS` にカンマが含まれる場合の注意点は「トラブルシューティング」を参照。
@@ -115,7 +115,7 @@ gcloud run deploy enikki-api --source . --region asia-northeast1 --allow-unauthe
 ### 必要な環境変数一覧 (Backend)
 | 変数名 | 説明 | 設定例 |
 |---|---|---|
-| `GCP_PROJECT_ID` | プロジェクトID | `your-project-id` |
+| `GOOGLE_CLOUD_PROJECT` | プロジェクトID | `your-project-id` |
 | `GCP_REGION` | 使用するリージョン (Gemini用) | `us-central1` |
 | `GCS_BUCKET_NAME` | 画像保存バケット | `your-project-id-enikki-images` |
 | `FRONTEND_URL` | フロントエンドURL (Discord通知用) | `https://your-frontend.web.app` |

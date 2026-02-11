@@ -15,9 +15,7 @@ from src.models import ConversationLogRequest, DiaryResponse
 app = FastAPI()
 
 # Firebase Admin 初期化
-project_id = os.getenv("GCP_PROJECT_ID", "enikki-cloud")
-# Firebase Auth 検証には多くの場合 GOOGLE_CLOUD_PROJECT 環境変数が必要
-os.environ["GOOGLE_CLOUD_PROJECT"] = project_id
+project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "enikki-cloud")
 
 if not firebase_admin._apps:
     try:
@@ -61,7 +59,7 @@ class TokenResponse(BaseModel):
 
 # Firestore クライアント初期化
 # ローカル開発などでプロジェクトIDが自動取得できない場合や、環境変数で指定したい場合に対応
-project_id = os.getenv("GCP_PROJECT_ID", "enikki-cloud")
+project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "enikki-cloud")
 try:
     db = firestore.Client(project=project_id)
 except Exception as e:
@@ -98,7 +96,7 @@ def get_auth_token(decoded_token: dict = Depends(verify_firebase_token)):
     credentials.refresh(auth_request)
 
     # 環境変数から設定を取得（デフォルト値付き）
-    project_id = os.getenv("GCP_PROJECT_ID", project or "enikki-cloud")
+    project_id = os.getenv("GOOGLE_CLOUD_PROJECT", project or "enikki-cloud")
     region = os.getenv("GCP_REGION", "asia-northeast1")
 
     return TokenResponse(
