@@ -17,7 +17,7 @@ from langchain_google_vertexai import ChatVertexAI
 from langgraph.graph import END, START, StateGraph
 
 # Gemini モデルの初期化
-PROJECT_ID = os.getenv("GCP_PROJECT_ID", "enikki-cloud")
+PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT", "enikki-cloud")
 REGION = os.getenv("GCP_REGION", "asia-northeast1")
 
 llm = ChatVertexAI(
