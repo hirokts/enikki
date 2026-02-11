@@ -3,14 +3,30 @@ import os
 
 import google.auth
 import google.auth.transport.requests
-from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
+from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import firestore
 from pydantic import BaseModel
+import firebase_admin
+from firebase_admin import auth, credentials
 
 from src.models import ConversationLogRequest, DiaryResponse
 
 app = FastAPI()
+
+# Firebase Admin 初期化
+project_id = os.getenv("GCP_PROJECT_ID", "enikki-cloud")
+# Firebase Auth 検証には多くの場合 GOOGLE_CLOUD_PROJECT 環境変数が必要
+os.environ["GOOGLE_CLOUD_PROJECT"] = project_id
+
+if not firebase_admin._apps:
+    try:
+        # 明示的にプロジェクトIDを指定して初期化
+        firebase_admin.initialize_app(options={'projectId': project_id})
+        print(f"Firebase Admin initialized for project: {project_id}")
+    except Exception as e:
+        print(f"Error initializing Firebase Admin: {e}")
+        firebase_admin.initialize_app()
 
 # CORS設定（環境変数から許可オリジンを取得）
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000")
@@ -25,15 +41,15 @@ app.add_middleware(
 )
 
 
-# API Key 検証
-def verify_api_key(x_api_key: str = Header(..., alias="X-API-Key")):
-    """X-API-Key ヘッダーを検証する"""
-    expected_key = os.getenv("API_KEY")
-    if not expected_key:
-        raise HTTPException(status_code=500, detail="API_KEY not configured")
-    if x_api_key != expected_key:
-        raise HTTPException(status_code=401, detail="Invalid API Key")
-    return x_api_key
+# Firebase Token 検証
+def verify_firebase_token(x_firebase_token: str = Header(..., alias="X-Firebase-Token")):
+    """Firebase ID トークンを検証する"""
+    try:
+        decoded_token = auth.verify_id_token(x_firebase_token)
+        return decoded_token
+    except Exception as e:
+        print(f"Token verification failed: {e}")
+        raise HTTPException(status_code=401, detail="Invalid or expired Firebase token")
 
 
 class TokenResponse(BaseModel):
@@ -64,19 +80,13 @@ def health_check():
 
 
 @app.post("/auth/token", response_model=TokenResponse)
-def get_auth_token(api_key: str = Header(..., alias="X-API-Key")):
+def get_auth_token(decoded_token: dict = Depends(verify_firebase_token)):
     """
     Vertex AI (Multimodal Live API) 接続用のアクセストークンを発行する。
     フロントエンドはこのトークンを使って Gemini に直接接続する。
 
-    認証: X-API-Key ヘッダーが必要
+    認証: X-Firebase-Token ヘッダーが必要
     """
-    # API Key 検証
-    expected_key = os.getenv("API_KEY")
-    if not expected_key:
-        raise HTTPException(status_code=500, detail="API_KEY not configured")
-    if api_key != expected_key:
-        raise HTTPException(status_code=401, detail="Invalid API Key")
 
     # デフォルト認証情報を取得
     credentials, project = google.auth.default(
@@ -139,17 +149,14 @@ def process_diary_in_background(document_id: str, conversation_log: dict):
 def create_diary(
     request: ConversationLogRequest,
     background_tasks: BackgroundTasks,
-    api_key: str = Header(..., alias="X-API-Key"),
+    decoded_token: dict = Depends(verify_firebase_token),
 ):
     """
     会話ログ（要約データ）を受け取り、Firestoreに保存し、
     バックグラウンドで LangGraph ワークフローを実行する。
-
-    即座に `status: pending` を返し、処理はバックグラウンドで実行される。
-    フロントエンドは Firestore リアルタイムリスナーでステータス変更を監視する。
     """
-    # API Key 検証
-    verify_api_key(api_key)
+    # トークンからUIDを取得
+    user_id = decoded_token.get("uid", "unknown-user")
 
     if not db:
         raise HTTPException(status_code=500, detail="Firestore database not connected")
@@ -159,7 +166,7 @@ def create_diary(
         doc_data = request.model_dump()
         doc_data.update(
             {
-                "userId": "test-user",  # プレースホルダー
+                "userId": user_id,
                 "status": "pending",  # 待機中
                 "createdAt": datetime.datetime.now(datetime.timezone.utc),
                 "updatedAt": datetime.datetime.now(datetime.timezone.utc),
