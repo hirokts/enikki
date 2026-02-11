@@ -47,14 +47,11 @@ export async function getVertexAIToken(): Promise<{
 
 /**
  * 日記作成 API を呼び出す
+ * date はブラウザから取得、内容は transcript からバックエンドが抽出
  */
 export async function createDiary(log: {
 	date: string;
-	activity: string;
-	feeling: string;
-	summary: string;
-	location?: string;
-	joke_hint?: string;
+	transcript: Array<{ role: 'user' | 'model'; text: string; timestamp: number }>;
 }): Promise<{ id: string; status: string }> {
 	const response = await fetchWithAuth('/diaries', {
 		method: 'POST',

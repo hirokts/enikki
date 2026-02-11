@@ -65,25 +65,21 @@
 				const functionCall = toolCall.functionCalls[0];
 
 				if (functionCall.name === 'report_diary_event') {
-					console.log('Diary event reported:', functionCall.args);
+					console.log('Diary event reported (conversation end signal)');
+
+					// transcript を取得してから stop() する
+					const transcript = client?.getTranscript() ?? [];
+					console.log('Transcript entries:', transcript.length);
 
 					stop();
 
-					// args are already an object
-					const args = functionCall.args;
-
-					// Send log to backend
+					// date はブラウザから取得、内容は transcript から抽出
 					createDiary({
-						date: args.date || new Date().toISOString().split('T')[0],
-						location: args.location,
-						activity: args.activity,
-						feeling: args.feeling,
-						summary: args.summary,
-						joke_hint: args.joke_hint
+						date: new Date().toISOString().split('T')[0],
+						transcript
 					})
 						.then((response) => {
 							console.log('Diary created:', response);
-							// Complete the conversation with structured data
 							oncomplete({
 								diaryId: response.id
 							});
@@ -120,13 +116,33 @@
 	}
 
 	function endConversation() {
+		// transcript を取得してから stop() する
+		const transcript = client?.getTranscript() ?? [];
+		console.log('End conversation - Transcript entries:', transcript.length);
+
+		if (transcript.length === 0) {
+			stop();
+			alert('会話が短すぎます。もう少しお話ししてください。');
+			return;
+		}
+
 		stop();
-		// TODO: 会話ログから絵日記を生成（後続issue）
-		// For now, we don't have a diary ID in this stub implementation
-		// oncomplete({
-		// 	diaryId: 'stub-id'
-		// });
-		alert('会話が短すぎます。もう少しお話ししてください。');
+
+		// transcript から日記を生成（ツールコールなしで手動終了した場合）
+		createDiary({
+			date: new Date().toISOString().split('T')[0],
+			transcript
+		})
+			.then((response) => {
+				console.log('Diary created from transcript:', response);
+				oncomplete({
+					diaryId: response.id
+				});
+			})
+			.catch((err) => {
+				console.error('Failed to create diary:', err);
+				alert('日記の保存に失敗しました。');
+			});
 	}
 
 	function stop() {

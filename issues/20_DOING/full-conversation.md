@@ -27,76 +27,26 @@ MultimodalRecorder → createDiary(構造化データ + 会話全文transcript) 
 
 ### Phase 1: フロントエンド — LiveClient に transcription を有効化
 
-- [ ] `LiveClient.sendSetupMessage()` の setup config に以下を追加:
-  ```json
-  "input_audio_transcription": {},
-  "output_audio_transcription": {}
-  ```
-  ※ `response_modalities` は `['AUDIO']` のまま変更しない
-- [ ] `LiveClient` に transcript 蓄積用の配列を追加:
-  ```typescript
-  private transcript: TranscriptEntry[] = [];
-  ```
-- [ ] `handleMessage()` で `serverContent.inputTranscription` を検知し、ユーザー発話テキストを蓄積:
-  ```typescript
-  if (data.serverContent?.inputTranscription?.text) {
-    this.transcript.push({
-      role: "user",
-      text: data.serverContent.inputTranscription.text,
-      timestamp: Date.now(),
-    });
-    this.dispatchEvent(
-      new CustomEvent("inputTranscription", {
-        detail: data.serverContent.inputTranscription.text,
-      }),
-    );
-  }
-  ```
-- [ ] `handleMessage()` で `serverContent.outputTranscription` を検知し、モデル応答テキストを蓄積:
-  ```typescript
-  if (data.serverContent?.outputTranscription?.text) {
-    this.transcript.push({
-      role: "model",
-      text: data.serverContent.outputTranscription.text,
-      timestamp: Date.now(),
-    });
-    this.dispatchEvent(
-      new CustomEvent("outputTranscription", {
-        detail: data.serverContent.outputTranscription.text,
-      }),
-    );
-  }
-  ```
-- [ ] `getTranscript()` メソッドを公開:
-  ```typescript
-  getTranscript(): TranscriptEntry[] {
-    return [...this.transcript];
-  }
-  ```
-- [ ] `disconnect()` 時に transcript をクリアしないようにする（送信前に取得するため）
+- [x] `LiveClient.sendSetupMessage()` の setup config に `input_audio_transcription: {}` と `output_audio_transcription: {}` を追加
+- [x] `LiveClient` に transcript 蓄積用の配列を追加（`private transcript: TranscriptEntry[] = []`）
+- [x] `handleMessage()` で `serverContent.inputTranscription` を検知し、ユーザー発話テキストを蓄積 & `inputTranscription` イベント発火
+- [x] `handleMessage()` で `serverContent.outputTranscription` を検知し、モデル応答テキストを蓄積 & `outputTranscription` イベント発火
+- [x] `getTranscript()` / `clearTranscript()` メソッドを公開
+- [x] `disconnect()` 時に transcript をクリアしないようにする（送信前に取得するため）
 
 ### Phase 2: フロントエンド — API 送信の拡張
 
-- [ ] `api.ts` の `createDiary()` の引数型に `transcript` フィールドを追加:
-  ```typescript
-  transcript?: Array<{ role: 'user' | 'model'; text: string; timestamp: number }>;
-  ```
-- [ ] `MultimodalRecorder.svelte` の `toolCall` ハンドラーで `client.getTranscript()` を取得し `createDiary()` に渡す
-- [ ] 「日記にする」ボタン（`endConversation`）からも transcript 付きで送信できるようにする
+- [x] `api.ts` の `createDiary()` の引数型に `transcript` フィールドを追加
+- [x] `MultimodalRecorder.svelte` の `toolCall` ハンドラーで `client.getTranscript()` を取得し `createDiary()` に渡す
+- [x] 「日記にする」ボタン（`endConversation`）からも transcript 付きで送信できるようにする
 
 ### Phase 3: バックエンド — transcript の受信と活用
 
-- [ ] `models.py` の `ConversationLogRequest` に `transcript` フィールドを追加:
-  ```python
-  transcript: list[dict] | None = None
-  ```
-- [ ] `main.py` の `create_diary` で transcript を Firestore に保存し、ワークフローに渡す
-- [ ] `diary_workflow.py` の `DiaryState` に `transcript` フィールドを追加
-- [ ] `extract_keywords` ノードのプロンプトに transcript を組み込む
-  - transcript がある場合は構造化データよりも transcript を優先的に使う
-- [ ] `generate_diary` ノードのプロンプトに transcript を組み込む
-  - 会話全文をもとに、よりリッチなキーワード抽出と日記文章生成を行う
-- [ ] transcript が長すぎる場合の対策（トークン制限）
+- [x] `models.py` に `TranscriptEntry` モデルを追加、`ConversationLogRequest` に `transcript` フィールドを追加
+- [x] `main.py` の `create_diary` で transcript を Firestore に保存し、ワークフローに渡す
+- [x] `diary_workflow.py` に `format_transcript()` ヘルパー関数を追加
+- [x] `extract_keywords` ノードのプロンプトに transcript を組み込む（transcript がある場合は優先利用）
+- [x] `generate_diary` ノードのプロンプトに transcript を組み込む（会話全文セクションとして挿入）
 
 ### Phase 4: 動作確認
 
