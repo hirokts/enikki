@@ -52,6 +52,7 @@ Obsidian に「夕方のチェックアウト」というタイムボックス�
 graph TB
     subgraph "Frontend (SvelteKit) — taketaku"
         UI[Web UI]
+        Auth[Firebase Auth<br/>Google Sign-In]
         Recorder[MultimodalRecorder]
         LiveClient[LiveClient - WebSocket]
     end
@@ -74,11 +75,12 @@ graph TB
 
     Discord[Discord Webhook]
 
-    UI --> Recorder
+    UI --> Auth
+    Auth --> Recorder
     Recorder --> LiveClient
     LiveClient <-->|WebSocket<br/>リアルタイム音声| LiveAPI
-    Recorder -->|会話ログ POST| API
-    API -->|トークン発行| LiveClient
+    Recorder -->|会話ログ POST<br/>+ Firebase ID Token| API
+    API -->|Vertex アクセストークン発行| LiveClient
     API --> Workflow
     Workflow --> GeminiText
     Workflow --> GeminiImage
@@ -127,21 +129,8 @@ graph TB
 
 **案Bを採用した。** バックエンドの役割は2つだけに絞った。
 
-1. **トークン発行**: フロントエンドが Gemini に接続するための短期アクセストークンを生成
+1. **セキュアなトークン発行**: Firebase ID トークンを検証し、正当なユーザーにのみ Vertex AI の短期アクセストークンを生成
 2. **後処理**: 会話終了後に会話ログを受け取り、絵日記生成ワークフローを実行
-
-```python
-# バックエンド: トークン発行（セキュリティの要）
-@app.post("/auth/token")
-def get_auth_token():
-    credentials, project = google.auth.default(
-        scopes=["https://www.googleapis.com/auth/cloud-platform"]
-    )
-    credentials.refresh(google.auth.transport.requests.Request())
-    return TokenResponse(accessToken=credentials.token, expiresIn=3600)
-```
-
-API Key をフロントエンドに埋め込まないため、セキュリティも確保される。
 
 ### Agentic な振る舞い: AI が会話を自律的に終了する
 
@@ -151,21 +140,18 @@ Tool Callingを使って、会話の終了タイミングをAIに委ねている
 tools: [{
   function_declarations: [{
     name: 'report_diary_event',
-    description: '絵日記に必要な情報が集まったら呼び出す',
+    description: '絵日記に必要な情報が十分に集まったと判断したら呼び出す。',
     parameters: {
       type: 'OBJECT',
-      properties: {
-        activity: { type: 'STRING' },
-        feeling:  { type: 'STRING' },
-        summary:  { type: 'STRING' },
-        joke_hint: { type: 'STRING', description: '大人向けジョークのヒント' }
-      }
+      properties: {} // 引数は持たせず、合図としてのみ使用
     }
   }]
 }]
 ```
 
-Gemini が「情報は十分集まった」と判断すると、自分でこの関数を呼ぶ。ユーザーが「終了」ボタンを押すのではなく、**AI が自律的に会話を切り上げる。** フロントエンドは `report_diary_event` の呼び出しを検知すると会話を終了し、それまでの会話ログをバックエンドに POST する。
+Gemini が「情報は十分集まった」と判断すると、自分でこの関数を呼ぶ。フロントエンド側はそのイベントを検知すると、**APIがリアルタイムに文字起こしした全会話ログ（transcript）**を `LiveClient` から取得し、バックエンドへ POST する。
+
+この「全会話ログを渡す」形にしたことで、バックエンドの LangGraph ワークフロー側でより柔軟に日記の文脈を解析できるようになった。
 
 初めて音声チャットで Gemini が応答した瞬間、2人とも画面の前で声を上げた。「え、本当にブラウザから直接話せるの？」。ドキュメントで読んだ仕組みが目の前で動くのは、理解とは別の驚きがある。
 
@@ -308,7 +294,7 @@ Antigravity から見ると、課題ファイルは普通のソースコード�
 
 いちばんやりたいのは **画像に「自分」を入れる** こと。「猫と遊んだ」のに猫しか描かれない絵日記は物足りない。ユーザーのアバターを設定して、絵の中に自分を登場させたい。
 
-カレンダー表示やユーザー認証も欲しいが、まずは「自分が絵に入る」を優先したい。それだけで絵日記の満足度が変わると思う。
+カレンダー表示なども欲しいが、まずは「自分が絵に入る」を優先したい。それだけで絵日記の満足度が変わると思う。
 
 ---
 
