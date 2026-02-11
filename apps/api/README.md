@@ -38,7 +38,7 @@ cp .env.example .env
 
 | Variable | Description |
 |----------|-------------|
-| `GCP_PROJECT_ID` | Google Cloud Project ID |
+| `GOOGLE_CLOUD_PROJECT` | Google Cloud Project ID |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account key JSON (local dev) |
 
 ## Structure

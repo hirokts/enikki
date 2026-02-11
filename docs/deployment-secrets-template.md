@@ -26,7 +26,8 @@ gcloud run deploy enikki-api \
   --source . \
   --region asia-northeast1 \
   --allow-unauthenticated \
-  --set-env-vars "^@^GCP_PROJECT_ID=YOUR_PROJECT_ID@GCP_REGION=us-central1@GCS_BUCKET_NAME=YOUR_BUCKET_NAME@FRONTEND_URL=https://YOUR_FRONTEND.web.app@ALLOWED_ORIGINS=https://YOUR_FRONTEND.web.app,http://localhost:5173@API_KEY=YOUR_API_KEY@DISCORD_WEBHOOK_URL=YOUR_WEBHOOK_URL"
+  --no-cpu-throttling \
+  --set-env-vars "^@^GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID@GCP_REGION=us-central1@GCS_BUCKET_NAME=YOUR_BUCKET_NAME@FRONTEND_URL=https://YOUR_FRONTEND.web.app@ALLOWED_ORIGINS=https://YOUR_FRONTEND.web.app,http://localhost:5173@DISCORD_WEBHOOK_URL=YOUR_WEBHOOK_URL"
 ```
 
 ## 3. 環境変数更新のみ (Update Env Vars)
