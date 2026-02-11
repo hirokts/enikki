@@ -42,22 +42,39 @@ class DiaryState(TypedDict):
     error: str | None  # エラーメッセージ
 
 
+# --- ヘルパー関数 ---
+
+
+def format_transcript(transcript: list[dict] | None) -> str:
+    """transcript を読みやすいテキスト形式に変換する"""
+    if not transcript:
+        return ""
+
+    lines = []
+    for entry in transcript:
+        role_label = "ユーザー" if entry.get("role") == "user" else "AI"
+        text = entry.get("text", "").strip()
+        if text:
+            lines.append(f"{role_label}: {text}")
+
+    return "\n".join(lines)
+
+
 # --- ノード定義 ---
 
 
 def extract_keywords(state: DiaryState) -> dict:
     """会話ログから4つのキーワードを抽出"""
     log = state["conversation_log"]
+    transcript_text = format_transcript(log.get("transcript"))
 
-    prompt = f"""以下の会話ログから、絵日記に使う重要な4つのキーワードを抽出してください。
+    prompt = f"""以下の会話の全文から、絵日記に使う重要な4つのキーワードを抽出してください。
 キーワードは名詞や動詞など、絵に描きやすいものを選んでください。
 
-会話ログ:
-- 日付: {log.get("date", "不明")}
-- 場所: {log.get("location", "不明")}
-- 活動: {log.get("activity", "不明")}
-- 感想: {log.get("feeling", "不明")}
-- 要約: {log.get("summary", "")}
+会話全文:
+{transcript_text}
+
+日付: {log.get("date", "不明")}
 
 JSON形式で出力してください（キーワードの配列のみ）:
 ["キーワード1", "キーワード2", "キーワード3", "キーワード4"]
@@ -76,29 +93,25 @@ JSON形式で出力してください（キーワードの配列のみ）:
     except Exception as e:
         print(f"Error extracting keywords: {e}")
         # フォールバック
-        keywords = [
-            log.get("activity", ""),
-            log.get("feeling", ""),
-            log.get("location", "場所"),
-            "今日",
-        ]
-        return {"keywords": keywords, "status": "processing"}
+        return {"keywords": ["今日", "楽しい", "おでかけ", "きもち"], "status": "processing"}
 
 
 def generate_diary(state: DiaryState) -> dict:
-    """キーワードを元に絵日記テキストを生成"""
+    """キーワードと transcript を元に絵日記テキストを生成"""
     keywords = state.get("keywords", [])
     log = state["conversation_log"]
-    joke_hint = log.get("joke_hint", "")
+    transcript_text = format_transcript(log.get("transcript"))
 
     prompt = f"""以下の情報を元に、小学生が書くような「ぼくの夏休み」風の絵日記テキストを生成してください。
 ただし、実際の読者は大人なので、大人がクスッと笑える要素を入れてください。
 
-キーワード: {", ".join(keywords)}
-場所: {log.get("location", "")}
-活動: {log.get("activity", "")}
-感想: {log.get("feeling", "")}
-ジョークのヒント: {joke_hint if joke_hint else "なし（自由に考えてください）"}
+## 会話全文（最も重要な情報源）
+以下はユーザーとAIインタビュアーの会話全文です。この内容を元に、ユーザーが実際に話した体験やエピソードを忠実に反映してください。
+
+{transcript_text}
+
+## 抽出済みキーワード
+{", ".join(keywords)}
 
 ## ルール
 - 100〜150文字程度
@@ -112,13 +125,12 @@ def generate_diary(state: DiaryState) -> dict:
 - 「パチパチ音がした」
 - 「手がベタベタになった」
 
-## 大人向けジョークの例（参考にして、状況に合ったものを作ってください）
+## 大人向けジョークの例（参考にして、会話内容に合ったものを作ってください）
 
 ### 括弧でツッコミ（現実を添える）
 - 「早起きした（9時）」
 - 「たくさん歩いた（5000歩）」
 - 「ヘルシーなものを食べた（チートデイ）」
-- 「めちゃくちゃ寝た（昼まで）」
 
 ### 大人の悩みを子供言葉で
 - 「明日も休みだったらいいのに」
@@ -147,7 +159,7 @@ def generate_diary(state: DiaryState) -> dict:
     except Exception as e:
         print(f"Error generating diary: {e}")
         # フォールバック
-        diary_text = f"今日は{log.get('location', 'どこか')}で{log.get('activity', '遊んだ')}。{log.get('feeling', '楽しかった')}。"
+        diary_text = "今日はたのしい一日だった。またあしたあそびたい。"
         return {"diary_text": diary_text}
 
 
@@ -223,9 +235,7 @@ def generate_image(state: DiaryState) -> dict:
 Keep it simple and descriptive.
 
 Keywords: {", ".join(keywords)}
-Location: {log.get("location", "")}
-Activity: {log.get("activity", "")}
-Summary: {diary_text[:100]}
+Diary text: {diary_text[:200]}
 
 Output format (JSON):
 {{"scene": "English description of the scene", "elements": "key visual elements"}}
