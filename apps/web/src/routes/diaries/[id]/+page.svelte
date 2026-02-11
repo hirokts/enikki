@@ -95,7 +95,9 @@
 	<title>絵日記 - Enikki</title>
 </svelte:head>
 
-<div class="flex min-h-[60vh] w-full max-w-4xl flex-col items-center justify-center">
+<div
+	class="mx-auto flex min-h-[60vh] w-full max-w-4xl flex-col items-center justify-center px-4 pt-24"
+>
 	{#if loading}
 		<!-- ローディング画面 -->
 		<div class="flex flex-col items-center gap-4" in:fade>
