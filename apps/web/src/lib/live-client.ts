@@ -69,7 +69,8 @@ export class LiveClient extends EventTarget {
 							prebuilt_voice_config: {
 								voice_name: 'Aoede'
 							}
-						}
+						},
+						language_code: 'ja-JP'
 					}
 				},
 				input_audio_transcription: {},
