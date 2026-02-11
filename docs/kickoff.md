@@ -443,3 +443,10 @@ Would you like me to **provide a minimal React example for the Multimodal Live A
 
 #### 2026-02-08
 - deploymentのドキュメント作成
+
+#### 2026-02-11
+- トランスクリプトをバックエンドに送信するようにした
+- live apiのオプション変更
+- zennの記事作成
+- Youtube用のデモ動画を収録
+- firebaseによるGoogle認証
