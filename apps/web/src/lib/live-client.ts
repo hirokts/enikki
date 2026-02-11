@@ -3,6 +3,12 @@
  * ブラウザ標準の EventTarget を継承
  */
 
+export type TranscriptEntry = {
+	role: 'user' | 'model';
+	text: string;
+	timestamp: number;
+};
+
 type LiveClientConfig = {
 	projectId: string;
 	region: string;
@@ -12,6 +18,7 @@ type LiveClientConfig = {
 export class LiveClient extends EventTarget {
 	private ws: WebSocket | null = null;
 	private config: LiveClientConfig;
+	private transcript: TranscriptEntry[] = [];
 
 	constructor(config: LiveClientConfig) {
 		super();
@@ -65,6 +72,8 @@ export class LiveClient extends EventTarget {
 						}
 					}
 				},
+				input_audio_transcription: {},
+				output_audio_transcription: {},
 				system_instruction: {
 					parts: [
 						{
@@ -79,13 +88,10 @@ export class LiveClient extends EventTarget {
 ## ルール
 1. 一度にたくさんの質問をせず、ひとつずつ聞いてください。
 2. ユーザーが答えたら、ポジティブに反応してください（「それは楽しそうだね！」「すごいね！」など）。
-3. 大人向けジョークのネタになりそうなことをさりげなく聞いてください:
-   - 「ちなみに今日は何時に起きたの？」
-   - 「いっぱい食べた？カロリーは気にしない派？」
-   - 「明日も休み？それとも仕事？」
-   - 「何歩くらい歩いた？」
-4. 話が一段落したら、「report_diary_event」ツールを呼び出して終了してください。
-5. 常に日本語で話してください。`
+3. 会話の始めは、「今日はどんな日記を描こうか？」と聞いてください。
+4. なるべく一つの話題で深掘りするようにしてください。
+5. 10ターンぐらいの会話で話しがある程度溜まったら「このあたりで終わりにしようか？」と聞いて、ユーザーの同意を得てから「report_diary_event」ツールを呼び出して終了してください。
+6. 常に日本語で話してください。`
 						}
 					]
 				},
@@ -94,22 +100,11 @@ export class LiveClient extends EventTarget {
 						function_declarations: [
 							{
 								name: 'report_diary_event',
-								description: '絵日記に必要な情報が集まったら呼び出す。会話を終了する。',
+								description:
+									'絵日記に必要な情報が十分に集まったと判断したら呼び出す。会話を終了する。',
 								parameters: {
 									type: 'OBJECT',
-									properties: {
-										date: { type: 'STRING', description: '出来事の日付 (例: 2024-01-01)' },
-										location: { type: 'STRING', description: '場所' },
-										activity: { type: 'STRING', description: '何をしたか' },
-										feeling: { type: 'STRING', description: '感想' },
-										summary: { type: 'STRING', description: '会話の要約（絵日記の本文用）' },
-										joke_hint: {
-											type: 'STRING',
-											description:
-												'大人向けジョークのヒント（起床時間、歩数、食べた量、カロリー、明日の予定など）'
-										}
-									},
-									required: ['activity', 'feeling', 'summary']
+									properties: {}
 								}
 							}
 						]
@@ -178,6 +173,28 @@ export class LiveClient extends EventTarget {
 				}
 			}
 
+			// Handle input transcription (user speech → text)
+			if (data.serverContent.inputTranscription?.text) {
+				const text = data.serverContent.inputTranscription.text;
+				this.transcript.push({
+					role: 'user',
+					text,
+					timestamp: Date.now()
+				});
+				this.dispatchEvent(new CustomEvent('inputTranscription', { detail: text }));
+			}
+
+			// Handle output transcription (model speech → text)
+			if (data.serverContent.outputTranscription?.text) {
+				const text = data.serverContent.outputTranscription.text;
+				this.transcript.push({
+					role: 'model',
+					text,
+					timestamp: Date.now()
+				});
+				this.dispatchEvent(new CustomEvent('outputTranscription', { detail: text }));
+			}
+
 			if (data.serverContent.turnComplete) {
 				this.dispatchEvent(new Event('turnComplete'));
 			}
@@ -190,10 +207,26 @@ export class LiveClient extends EventTarget {
 		}
 	}
 
+	/**
+	 * 蓄積された会話 transcript を取得する
+	 * disconnect() 後でも取得可能
+	 */
+	getTranscript(): TranscriptEntry[] {
+		return [...this.transcript];
+	}
+
+	/**
+	 * transcript をクリアする
+	 */
+	clearTranscript() {
+		this.transcript = [];
+	}
+
 	disconnect() {
 		if (this.ws) {
 			this.ws.close();
 			this.ws = null;
 		}
+		// Note: transcript はクリアしない（disconnect 後に getTranscript() で取得するため）
 	}
 }

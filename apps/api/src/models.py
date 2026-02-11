@@ -3,15 +3,19 @@
 from pydantic import BaseModel
 
 
-class ConversationLogRequest(BaseModel):
-    """会話ログ（要約データ）のリクエストモデル"""
+class TranscriptEntry(BaseModel):
+    """会話 transcript の1エントリ"""
 
-    date: str
-    location: str
-    activity: str
-    feeling: str
-    summary: str
-    joke_hint: str | None = None
+    role: str  # 'user' or 'model'
+    text: str
+    timestamp: int  # Unix ms
+
+
+class ConversationLogRequest(BaseModel):
+    """会話ログ（date + transcript）のリクエストモデル"""
+
+    date: str  # ブラウザから取得した日付 (例: 2024-01-01)
+    transcript: list[TranscriptEntry]
 
 
 class DiaryResponse(BaseModel):

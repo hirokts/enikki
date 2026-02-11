@@ -173,11 +173,7 @@ def create_diary(
         # 会話ログを構築
         conversation_log = {
             "date": request.date,
-            "location": request.location,
-            "activity": request.activity,
-            "feeling": request.feeling,
-            "summary": request.summary,
-            "joke_hint": request.joke_hint,
+            "transcript": [entry.model_dump() for entry in request.transcript],
         }
 
         # バックグラウンドでワークフローを実行
