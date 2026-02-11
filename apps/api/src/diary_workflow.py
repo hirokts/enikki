@@ -261,12 +261,19 @@ Output format (JSON):
         elements = "warm atmosphere, family"
 
     # 画像生成プロンプト（英語に翻訳済み）
-    prompt = f"""A picture diary illustration in a warm, hand-drawn style.
-Scene: {scene_desc}
+    prompt = f"""Create an image that looks like it was drawn by a 10-year-old child with crayons.
+Theme: {scene_desc}
 Key elements: {elements}
 Style: Colorful, cheerful, simple shapes, crayon-like texture, picture diary style.
 
-Important: Bright colors, simple and cute illustration style."""
+Style requirements:
+- Very simple, childlike shapes (circles, scribbles, stick figures)
+- Bright crayon colors with visible texture
+- Uneven lines and wobbly shapes
+- Naive, primitive artistic style
+- Paper texture background
+
+IMPORTANT: Do NOT include any text, letters, numbers, or written words in the image."""
 
     try:
         # Gemini 2.5 Flash Image クライアント作成
