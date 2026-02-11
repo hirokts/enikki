@@ -5,7 +5,7 @@
 	import { page } from '$app/state';
 	import { getVertexAIToken } from '$lib/api';
 	import { doc, getDoc, onSnapshot, type Firestore } from 'firebase/firestore';
-	import { initializeFirebase } from '$lib/firebase';
+	import { getFirebase } from '$lib/firebase';
 
 	let db: Firestore | null = null;
 	let diaryId: string = $derived(page.params.id ?? '');
@@ -18,9 +18,9 @@
 
 	onMount(async () => {
 		try {
-			// Initialize Firebase with project ID from backend
-			const token = await getVertexAIToken();
-			db = initializeFirebase(token.projectId);
+			// Initialize Firebase
+			const { db: firestore } = getFirebase();
+			db = firestore;
 
 			// Start watching the diary document
 			watchDiary();

@@ -1,23 +1,28 @@
+import { getFirebase } from './firebase';
+
 // API URL (from environment variable or default to localhost)
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 /**
- * API Key を取得（localStorage から）
+ * Firebase ID Token を取得
  */
-function getApiKey(): string | null {
+async function getIdToken(): Promise<string | null> {
 	if (typeof window === 'undefined') return null;
-	return localStorage.getItem('apiKey');
+	const { auth } = getFirebase();
+	const user = auth.currentUser;
+	if (!user) return null;
+	return user.getIdToken();
 }
 
 /**
- * API リクエストを送信（X-API-Key ヘッダー付き）
+ * API リクエストを送信（X-Firebase-Token ヘッダー付き）
  */
 export async function fetchWithAuth(path: string, options: RequestInit = {}): Promise<Response> {
-	const apiKey = getApiKey();
+	const token = await getIdToken();
 
 	const headers = new Headers(options.headers);
-	if (apiKey) {
-		headers.set('X-API-Key', apiKey);
+	if (token) {
+		headers.set('X-Firebase-Token', token);
 	}
 
 	return fetch(`${API_BASE_URL}${path}`, {
@@ -87,26 +92,29 @@ export async function getEphemeralToken(): Promise<{
 }
 
 /**
- * API Key の設定状況をチェックして console.log に出力
- * ページ読み込み時に自動実行される
+ * ログイン状態をチェックして console.log に出力
  */
-export async function checkApiKeyStatus(): Promise<boolean> {
-	const apiKey = getApiKey();
+export async function checkAuthStatus(): Promise<boolean> {
+	const { auth } = getFirebase();
 
-	if (!apiKey) {
-		console.log('🔑 API Key が設定されていません');
-		console.log('💡 設定方法: localStorage.setItem("apiKey", "your-api-key")');
-		return false;
-	}
-
-	try {
-		const token = await getVertexAIToken();
-		console.log('✅ API Key 認証成功!');
-		console.log(`   Project: ${token.projectId}`);
-		console.log(`   Region: ${token.region}`);
-		return true;
-	} catch (error) {
-		console.log('❌ API Key 認証失敗:', error instanceof Error ? error.message : error);
-		return false;
-	}
+	return new Promise((resolve) => {
+		const unsubscribe = auth.onAuthStateChanged(async (user) => {
+			unsubscribe();
+			if (user) {
+				console.log('✅ ログイン済み:', user.email);
+				try {
+					const token = await getVertexAIToken();
+					console.log('✅ Vertex AI トークン取得成功');
+					console.log(`   Project: ${token.projectId}`);
+					resolve(true);
+				} catch (error) {
+					console.log('❌ トークン取得失敗:', error instanceof Error ? error.message : error);
+					resolve(false);
+				}
+			} else {
+				console.log('🔑 ログインされていません');
+				resolve(false);
+			}
+		});
+	});
 }

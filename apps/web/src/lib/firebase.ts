@@ -1,41 +1,48 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
+
+const firebaseConfig = {
+	apiKey: "AIzaSyBfRJXiZpnkhwAgEL_kUyIpr1l0hyF-MKY",
+	authDomain: "enikki-cloud.firebaseapp.com",
+	projectId: "enikki-cloud",
+	storageBucket: "enikki-cloud.firebasestorage.app",
+	messagingSenderId: "690196371357",
+	appId: "1:690196371357:web:b2132b3c4737df9cc58174"
+};
 
 let firebaseApp: FirebaseApp | null = null;
 let firestoreDb: Firestore | null = null;
+let firebaseAuth: Auth | null = null;
 
 /**
- * Initialize Firebase with the given project ID
- * This should be called after getting the token from the backend
+ * Initialize Firebase
  */
-export function initializeFirebase(projectId: string): Firestore {
-	if (firestoreDb && firebaseApp) {
-		console.log('Firebase already initialized, reusing existing instance');
-		return firestoreDb;
+export function getFirebase(): { app: FirebaseApp; db: Firestore; auth: Auth } {
+	if (!firebaseApp) {
+		firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 	}
 
-	const firebaseConfig = {
-		// API Key is required for Firebase, but for Firestore-only usage
-		// we can use a placeholder. In production, get this from the backend too.
-		apiKey: 'placeholder-api-key',
-		projectId: projectId
+	if (!firestoreDb) {
+		firestoreDb = getFirestore(firebaseApp);
+	}
+
+	if (!firebaseAuth) {
+		firebaseAuth = getAuth(firebaseApp);
+	}
+
+	return {
+		app: firebaseApp,
+		db: firestoreDb,
+		auth: firebaseAuth
 	};
-
-	console.log('Initializing Firebase with project:', projectId);
-
-	firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-	firestoreDb = getFirestore(firebaseApp);
-
-	return firestoreDb;
 }
 
+export const googleProvider = new GoogleAuthProvider();
+
 /**
- * Get the Firestore database instance
- * Throws if Firebase is not initialized
+ * Legacy support for getDb
  */
 export function getDb(): Firestore {
-	if (!firestoreDb) {
-		throw new Error('Firebase not initialized. Call initializeFirebase first.');
-	}
-	return firestoreDb;
+	return getFirebase().db;
 }
