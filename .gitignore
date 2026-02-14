@@ -11,3 +11,6 @@ secrets/
 
 # Python
 __pycache__/
+
+# Agent
+.agent/
