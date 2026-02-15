@@ -40,6 +40,7 @@ class DiaryState(TypedDict):
     image_url: str | None  # 生成された画像の URL
     status: str  # pending / processing / completed / failed
     error: str | None  # エラーメッセージ
+    discord_webhook_url: str | None  # ユーザー設定の Discord Webhook URL
 
 
 # --- ヘルパー関数 ---
@@ -357,16 +358,18 @@ def save_result(state: DiaryState) -> dict:
     """結果を Firestore に保存し、Discord に通知"""
     from src.discord_notifier import send_discord_notification_sync
 
-    # Discord通知を送信
+    # Discord通知を送信（webhook URL が設定されている場合のみ）
     log = state["conversation_log"]
     document_id = state.get("document_id")
     title = log.get("date", "今日の絵日記")
     diary_text = state.get("diary_text", "")
     image_url = state.get("image_url")
     keywords = state.get("keywords")
+    webhook_url = state.get("discord_webhook_url")
 
-    if diary_text:
+    if diary_text and webhook_url:
         send_discord_notification_sync(
+            webhook_url=webhook_url,
             title=title,
             diary_text=diary_text,
             diary_id=document_id,
@@ -423,7 +426,7 @@ diary_workflow = build_diary_workflow().compile()
 # --- 実行用ヘルパー ---
 
 
-def run_diary_workflow(document_id: str, conversation_log: dict) -> DiaryState:
+def run_diary_workflow(document_id: str, conversation_log: dict, discord_webhook_url: str | None = None) -> DiaryState:
     """ワークフローを実行"""
     initial_state: DiaryState = {
         "document_id": document_id,
@@ -435,6 +438,7 @@ def run_diary_workflow(document_id: str, conversation_log: dict) -> DiaryState:
         "image_url": None,
         "status": "pending",
         "error": None,
+        "discord_webhook_url": discord_webhook_url,
     }
 
     result = diary_workflow.invoke(initial_state)

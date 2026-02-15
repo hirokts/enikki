@@ -16,6 +16,7 @@ class ConversationLogRequest(BaseModel):
 
     date: str  # ブラウザから取得した日付 (例: 2024-01-01)
     transcript: list[TranscriptEntry]
+    discordWebhookUrl: str | None = None  # ユーザーが設定した Discord Webhook URL
 
 
 class DiaryResponse(BaseModel):

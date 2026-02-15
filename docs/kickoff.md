@@ -450,3 +450,11 @@ Would you like me to **provide a minimal React example for the Multimodal Live A
 - zennの記事作成
 - Youtube用のデモ動画を収録
 - firebaseによるGoogle認証
+
+#### 2026-02-14
+- Youtube用のデモ動画作成
+- チャンネル開設とアップロード
+- Zenn記事作成
+
+#### 2026-02-15
+- Discord Webhookの設定
