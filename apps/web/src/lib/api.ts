@@ -58,12 +58,20 @@ export async function createDiary(log: {
 	date: string;
 	transcript: Array<{ role: 'user' | 'model'; text: string; timestamp: number }>;
 }): Promise<{ id: string; status: string }> {
+	// localStorage から Discord Webhook URL を取得
+	const discordWebhookUrl = typeof window !== 'undefined'
+		? localStorage.getItem('discord_webhook_url') || undefined
+		: undefined;
+
 	const response = await fetchWithAuth('/diaries', {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
 		},
-		body: JSON.stringify(log)
+		body: JSON.stringify({
+			...log,
+			discordWebhookUrl
+		})
 	});
 
 	if (!response.ok) {

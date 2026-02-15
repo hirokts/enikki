@@ -107,7 +107,7 @@ def get_auth_token(decoded_token: dict = Depends(verify_firebase_token)):
     )
 
 
-def process_diary_in_background(document_id: str, conversation_log: dict):
+def process_diary_in_background(document_id: str, conversation_log: dict, discord_webhook_url: str | None = None):
     """バックグラウンドで絵日記ワークフローを実行"""
     from src.diary_workflow import run_diary_workflow
 
@@ -118,7 +118,7 @@ def process_diary_in_background(document_id: str, conversation_log: dict):
             "updatedAt": datetime.datetime.now(datetime.timezone.utc),
         })
 
-        result = run_diary_workflow(document_id, conversation_log)
+        result = run_diary_workflow(document_id, conversation_log, discord_webhook_url=discord_webhook_url)
 
         # ワークフロー結果で Firestore を更新
         update_data = {
@@ -182,7 +182,7 @@ def create_diary(
         }
 
         # バックグラウンドでワークフローを実行
-        background_tasks.add_task(process_diary_in_background, document_id, conversation_log)
+        background_tasks.add_task(process_diary_in_background, document_id, conversation_log, request.discordWebhookUrl)
 
         # 即座に pending ステータスを返す
         return DiaryResponse(id=document_id, status="pending")

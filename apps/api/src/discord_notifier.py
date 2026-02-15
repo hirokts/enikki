@@ -2,79 +2,18 @@
 Discord通知ヘルパー
 
 絵日記生成完了時にDiscord Webhookへ通知を送信します。
+Webhook URL はユーザーがフロントエンドで設定し、リクエスト経由で渡されます。
 """
 
 import os
 import httpx
 
 
-DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 
-async def send_discord_notification(
-    title: str,
-    diary_text: str,
-    image_url: str | None = None,
-    keywords: list[str] | None = None,
-) -> bool:
-    """
-    Discord Webhookに絵日記完了通知を送信
-
-    Args:
-        title: 日記のタイトル（日付など）
-        diary_text: 日記本文
-        image_url: 生成された画像のURL（オプション）
-        keywords: 抽出されたキーワード（オプション）
-
-    Returns:
-        送信成功したかどうか
-    """
-    if not DISCORD_WEBHOOK_URL:
-        print("Discord Webhook URL is not configured")
-        return False
-
-    # Embed形式でリッチな表示
-    embed = {
-        "title": f"📔 {title}",
-        "description": diary_text,
-        "color": 0xFFB347,  # オレンジ色
-    }
-
-    # キーワードがあれば追加
-    if keywords:
-        embed["fields"] = [
-            {
-                "name": "🏷️ キーワード",
-                "value": " / ".join(keywords),
-                "inline": False,
-            }
-        ]
-
-    # 画像があれば追加
-    if image_url:
-        embed["image"] = {"url": image_url}
-
-    payload = {
-        "embeds": [embed],
-    }
-
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                DISCORD_WEBHOOK_URL,
-                json=payload,
-                timeout=10.0,
-            )
-            response.raise_for_status()
-            print(f"Discord notification sent successfully")
-            return True
-    except httpx.HTTPError as e:
-        print(f"Failed to send Discord notification: {e}")
-        return False
-
-
 def send_discord_notification_sync(
+    webhook_url: str,
     title: str,
     diary_text: str,
     diary_id: str | None = None,
@@ -82,9 +21,10 @@ def send_discord_notification_sync(
     keywords: list[str] | None = None,
 ) -> bool:
     """
-    Discord Webhookに絵日記完了通知を送信（同期版）
+    Discord Webhookに絵日記完了通知を送信
 
     Args:
+        webhook_url: Discord Webhook URL
         title: 日記のタイトル（日付など）
         diary_text: 日記本文
         diary_id: FirestoreドキュメントID（URLリンク用）
@@ -94,8 +34,8 @@ def send_discord_notification_sync(
     Returns:
         送信成功したかどうか
     """
-    if not DISCORD_WEBHOOK_URL:
-        print("Discord Webhook URL is not configured")
+    if not webhook_url:
+        print("Discord Webhook URL is not provided, skipping notification")
         return False
 
     # 日記ページのURL
@@ -133,7 +73,7 @@ def send_discord_notification_sync(
     try:
         with httpx.Client() as client:
             response = client.post(
-                DISCORD_WEBHOOK_URL,
+                webhook_url,
                 json=payload,
                 timeout=10.0,
             )

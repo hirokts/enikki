@@ -12,6 +12,11 @@
 	let user: User | null = $state(null);
 	let isLoaded = $state(false);
 
+	// Discord Webhook 設定
+	let showWebhookModal = $state(false);
+	let webhookUrlInput = $state('');
+	let savedWebhookUrl = $state('');
+
 	onMount(async () => {
 		isLoaded = true;
 		const { auth, db: firestore } = getFirebase();
@@ -21,6 +26,13 @@
 		auth.onAuthStateChanged((u) => {
 			user = u;
 		});
+
+		// localStorage から Webhook URL を復元
+		const stored = localStorage.getItem('discord_webhook_url');
+		if (stored) {
+			savedWebhookUrl = stored;
+			webhookUrlInput = stored;
+		}
 	});
 
 	async function login() {
@@ -31,6 +43,37 @@
 			console.error('Login error:', err);
 			error = 'ログインに失敗しました';
 		}
+	}
+
+	// Webhook 設定
+	function openWebhookModal() {
+		webhookUrlInput = savedWebhookUrl;
+		showWebhookModal = true;
+	}
+
+	function saveWebhookUrl() {
+		const url = webhookUrlInput.trim();
+		if (url && !url.startsWith('https://discord.com/api/webhooks/')) {
+			alert(
+				'Discord Webhook URL の形式が正しくありません。\nhttps://discord.com/api/webhooks/... の形式で入力してください。'
+			);
+			return;
+		}
+		if (url) {
+			localStorage.setItem('discord_webhook_url', url);
+			savedWebhookUrl = url;
+		} else {
+			localStorage.removeItem('discord_webhook_url');
+			savedWebhookUrl = '';
+		}
+		showWebhookModal = false;
+	}
+
+	function removeWebhookUrl() {
+		localStorage.removeItem('discord_webhook_url');
+		savedWebhookUrl = '';
+		webhookUrlInput = '';
+		showWebhookModal = false;
 	}
 
 	// Generate snow particles
@@ -175,6 +218,22 @@
 						: 'translate-y-10 opacity-0'}"
 				>
 					{#if user}
+						<!-- 通知設定ボタン -->
+						<div class="mb-4 flex justify-end">
+							<button
+								id="webhook-settings-btn"
+								class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-all {savedWebhookUrl
+									? 'bg-accent/15 text-accent hover:bg-accent/25'
+									: 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
+								onclick={openWebhookModal}
+							>
+								{#if savedWebhookUrl}
+									<span>🔔</span> 通知ON
+								{:else}
+									<span>🔕</span> 通知設定
+								{/if}
+							</button>
+						</div>
 						<MultimodalRecorder oncomplete={handleComplete} />
 					{:else}
 						<div class="py-8 text-center">
@@ -296,3 +355,69 @@
 		{/if}
 	</div>
 </section>
+
+<!-- Webhook 設定モーダル -->
+{#if showWebhookModal}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+		transition:fade={{ duration: 150 }}
+		onkeydown={(e) => {
+			if (e.key === 'Escape') showWebhookModal = false;
+		}}
+		onclick={(e) => {
+			if (e.target === e.currentTarget) showWebhookModal = false;
+		}}
+	>
+		<div
+			class="mx-4 w-full max-w-md rounded-2xl bg-card p-6 shadow-2xl"
+			in:fly={{ y: 20, duration: 200 }}
+		>
+			<h3 class="mb-1 text-lg font-bold text-foreground">🔔 Discord 通知設定</h3>
+			<p class="mb-4 text-xs text-muted-foreground">
+				絵日記の生成完了時に Discord チャンネルへ通知を送信します。
+			</p>
+
+			<label for="webhook-url-input" class="mb-1 block text-sm font-medium text-foreground">
+				Webhook URL
+			</label>
+			<input
+				id="webhook-url-input"
+				type="url"
+				bind:value={webhookUrlInput}
+				placeholder="https://discord.com/api/webhooks/..."
+				class="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none"
+			/>
+			<p class="mt-1 mb-4 text-[11px] text-muted-foreground">
+				Discordのチャンネル設定 → 連携サービス → ウェブフック から取得できます
+			</p>
+
+			<div class="flex items-center justify-between gap-2">
+				<div>
+					{#if savedWebhookUrl}
+						<button
+							class="rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
+							onclick={removeWebhookUrl}
+						>
+							削除する
+						</button>
+					{/if}
+				</div>
+				<div class="flex gap-2">
+					<button
+						class="rounded-lg px-4 py-2 text-sm text-muted-foreground hover:bg-muted"
+						onclick={() => (showWebhookModal = false)}
+					>
+						キャンセル
+					</button>
+					<button
+						class="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:opacity-90"
+						onclick={saveWebhookUrl}
+					>
+						保存
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
