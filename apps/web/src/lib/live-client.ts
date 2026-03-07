@@ -61,7 +61,7 @@ export class LiveClient extends EventTarget {
 
 		const setupMessage = {
 			setup: {
-				model: `projects/${projectId}/locations/${region}/publishers/google/models/gemini-live-2.5-flash-preview-native-audio-09-2025`,
+				model: `projects/${projectId}/locations/${region}/publishers/google/models/gemini-live-2.5-flash-native-audio`,
 				generation_config: {
 					response_modalities: ['AUDIO'],
 					speech_config: {
